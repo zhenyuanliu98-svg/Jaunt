@@ -184,6 +184,15 @@ If it fails locally, you'll see the actual error.
 3. Check if you're using Transaction mode (not Session mode) URL
 4. Verify password is correct
 
+### "prepared statement \"s0\" already exists" (during Google/NextAuth callback)
+
+**Cause:** Prisma is using prepared statements against a pooled/transaction connection (e.g., Vercel Postgres pooled string, Supabase PgBouncer), which rejects them.
+
+**Fix:**
+1. Append `?pgbouncer=true&connection_limit=1` to `DATABASE_URL` so Prisma uses simple queries.
+2. Add `DIRECT_DATABASE_URL` with the non-pooled connection string for Prisma migrations.
+3. Redeploy after updating environment variables and re-run `npx prisma db push` if needed.
+
 ### "Error: ENOENT: no such file or directory"
 
 **Cause:** Missing file or incorrect path
