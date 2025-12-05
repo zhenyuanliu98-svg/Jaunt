@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/prisma'
-import { supabase } from '@/lib/supabase'
+import { findUserByEmail, findTripsByUserId, getBookingCountForTrip, createTrip } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession()
@@ -10,26 +9,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email! }
-  })
+  const user = await findUserByEmail(session.user.email!)
 
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
-  const trips = await prisma.trip.findMany({
-    where: { userId: user.id },
-    orderBy: { startDate: 'desc' }
-  })
+  const trips = await findTripsByUserId(user.id, 'desc')
 
   const enriched = await Promise.all(trips.map(async (trip: any) => {
-    const { count } = await supabase
-      .from('bookings')
-      .select('id', { head: true, count: 'exact' })
-      .eq('tripId', trip.id)
-
-    return { ...trip, _count: { bookings: count ?? 0 } }
+    const count = await getBookingCountForTrip(trip.id)
+    return { ...trip, _count: { bookings: count } }
   }))
 
   return NextResponse.json(enriched)
@@ -42,9 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email! }
-  })
+  const user = await findUserByEmail(session.user.email!)
 
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -61,14 +49,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const trip = await prisma.trip.create({
-      data: {
-        userId: user.id,
-        name,
-        destination,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-      }
+    const trip = await createTrip({
+      userId: user.id,
+      name,
+      destination,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
     })
 
     return NextResponse.json(trip, { status: 201 })

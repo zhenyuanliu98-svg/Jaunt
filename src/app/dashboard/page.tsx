@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/prisma'
+import { getUserWithTripsAndBookings } from '@/lib/db'
 import { demoUser } from '@/lib/demoData'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card'
@@ -15,31 +15,15 @@ export default async function DashboardPage() {
 
   const user = isDemoMode
     ? demoUser
-    : await prisma.user.findUnique({
-        where: { email: session.user.email! },
-        include: {
-          trips: {
-            orderBy: { startDate: 'desc' },
-            include: {
-              _count: {
-                select: { bookings: true }
-              }
-            }
-          },
-          pendingBookings: {
-            where: { status: 'PENDING' },
-            take: 5,
-          }
-        }
-      })
+    : await getUserWithTripsAndBookings(session.user.email!)
 
   if (!user) {
     redirect('/')
   }
 
   const now = new Date()
-  const upcomingTrips = user.trips.filter(trip => new Date(trip.endDate) >= now)
-  const pastTrips = user.trips.filter(trip => new Date(trip.endDate) < now)
+  const upcomingTrips = user.trips.filter((trip: any) => new Date(trip.endDate) >= now)
+  const pastTrips = user.trips.filter((trip: any) => new Date(trip.endDate) < now)
   const pendingCount = user.pendingBookings.length
 
   return (
@@ -127,7 +111,7 @@ export default async function DashboardPage() {
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {upcomingTrips.map((trip) => (
+              {upcomingTrips.map((trip: any) => (
                 <Link key={trip.id} href={`/trips/${trip.id}`}>
                   <Card className="hover:shadow-md transition-shadow cursor-pointer">
                     <CardHeader>
@@ -164,7 +148,7 @@ export default async function DashboardPage() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Past Trips</h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {pastTrips.map((trip) => (
+              {pastTrips.map((trip: any) => (
                 <Link key={trip.id} href={`/trips/${trip.id}`}>
                   <Card className="hover:shadow-md transition-shadow cursor-pointer opacity-75">
                     <CardHeader>

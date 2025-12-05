@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/prisma'
+import { findUserByEmail, findPendingBookingsByUserId, findTripsByUserId } from '@/lib/db'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import PendingBookingsList from '@/components/Booking/PendingBookingsList'
 import { demoPendingBookings, demoTrips, demoUser } from '@/lib/demoData'
@@ -11,9 +11,7 @@ export default async function PendingBookingsPage() {
 
   const user = isDemoMode
     ? demoUser
-    : await prisma.user.findUnique({
-        where: { email: session.user.email! }
-      })
+    : await findUserByEmail(session.user.email!)
 
   if (!user) {
     redirect('/')
@@ -21,22 +19,11 @@ export default async function PendingBookingsPage() {
 
   const pendingBookings = isDemoMode
     ? demoPendingBookings
-    : await prisma.pendingBooking.findMany({
-        where: {
-          userId: user.id,
-          status: 'PENDING'
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      })
+    : await findPendingBookingsByUserId(user.id)
 
   const trips = isDemoMode
     ? demoTrips
-    : await prisma.trip.findMany({
-        where: { userId: user.id },
-        orderBy: { startDate: 'desc' }
-      })
+    : await findTripsByUserId(user.id, 'desc')
 
   return (
     <DashboardLayout>
