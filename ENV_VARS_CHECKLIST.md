@@ -6,10 +6,13 @@ Copy this checklist when setting up environment variables in Vercel.
 
 ### Database
 ```
-DATABASE_URL=postgresql://user:password@host:port/database
+DATABASE_URL=postgresql://user:password@host:port/database?pgbouncer=true&connection_limit=1
+DIRECT_DATABASE_URL=postgresql://user:password@host:port/database
 ```
 - **If using Vercel Postgres**: Auto-set by Vercel ✓
 - **If using external DB**: Get from your database provider
+- **If using any pooled/transaction connection (PgBouncer, Vercel Postgres, Supabase transaction string)**: Keep `?pgbouncer=true&connection_limit=1` to disable prepared statements and avoid `prepared statement "s0" already exists` errors.
+- **`DIRECT_DATABASE_URL`**: Use a non-pooled connection string for Prisma migrations when pooling is enabled.
 
 ### NextAuth
 ```
@@ -180,6 +183,11 @@ Before testing your app:
 - Verify `GOOGLE_CLIENT_ID` matches Google Console
 - Check redirect URI in Google Console matches exactly
 - Ensure `NEXTAUTH_URL` is correct
+
+### "prepared statement \"s0\" already exists" during sign in
+- Append `?pgbouncer=true&connection_limit=1` to `DATABASE_URL` if you're using a pooled/transaction connection (Vercel Postgres, Supabase PgBouncer, Railway pooled).
+- Add `DIRECT_DATABASE_URL` with the non-pooled string for Prisma migrations.
+- Redeploy after updating environment variables.
 
 ### "Missing secret" error
 - Set `NEXTAUTH_SECRET`
