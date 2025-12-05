@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
+import { demoUser } from '@/lib/demoData'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
@@ -10,27 +11,27 @@ import Link from 'next/link'
 export default async function DashboardPage() {
   const session = await getServerSession()
 
-  if (!session || !session.user) {
-    redirect('/')
-  }
+  const isDemoMode = !session || !session.user
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email! },
-    include: {
-      trips: {
-        orderBy: { startDate: 'desc' },
+  const user = isDemoMode
+    ? demoUser
+    : await prisma.user.findUnique({
+        where: { email: session.user.email! },
         include: {
-          _count: {
-            select: { bookings: true }
+          trips: {
+            orderBy: { startDate: 'desc' },
+            include: {
+              _count: {
+                select: { bookings: true }
+              }
+            }
+          },
+          pendingBookings: {
+            where: { status: 'PENDING' },
+            take: 5,
           }
         }
-      },
-      pendingBookings: {
-        where: { status: 'PENDING' },
-        take: 5,
-      }
-    }
-  })
+      })
 
   if (!user) {
     redirect('/')
@@ -43,6 +44,15 @@ export default async function DashboardPage() {
 
   return (
     <DashboardLayout>
+      {isDemoMode && (
+        <Card className="bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-200 mb-6">
+          <CardContent className="py-4">
+            <p className="text-sm text-indigo-800">
+              You&apos;re exploring Jaunt in demo mode. Sign in to save your own trips and bookings.
+            </p>
+          </CardContent>
+        </Card>
+      )}
       <div className="space-y-6">
         {/* Welcome Section */}
         <div className="flex justify-between items-start">

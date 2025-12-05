@@ -11,13 +11,15 @@ import { format } from 'date-fns'
 
 interface TripViewProps {
   trip: any
+  isReadOnly?: boolean
 }
 
-export default function TripView({ trip }: TripViewProps) {
+export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
+    if (isReadOnly) return
     if (!confirm('Are you sure you want to delete this trip? This action cannot be undone.')) {
       return
     }
@@ -41,6 +43,7 @@ export default function TripView({ trip }: TripViewProps) {
   }
 
   const handleShare = async () => {
+    if (isReadOnly) return
     try {
       const response = await fetch(`/api/trips/${trip.id}/share`, {
         method: 'POST',
@@ -92,17 +95,34 @@ export default function TripView({ trip }: TripViewProps) {
               </div>
             </div>
             <div className="flex space-x-2">
-              <Button variant="ghost" onClick={handleShare}>
+              <Button
+                variant="ghost"
+                onClick={handleShare}
+                disabled={isReadOnly}
+                title={isReadOnly ? 'Sign in to share trips' : undefined}
+              >
                 <Share2 className="h-4 w-4 mr-2" />
                 Share
               </Button>
-              <Link href={`/trips/${trip.id}/edit`}>
-                <Button variant="ghost">
+              {isReadOnly ? (
+                <Button variant="ghost" disabled title="Sign in to edit trips">
                   <Pencil className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
-              </Link>
-              <Button variant="danger" onClick={handleDelete} disabled={isDeleting}>
+              ) : (
+                <Link href={`/trips/${trip.id}/edit`}>
+                  <Button variant="ghost">
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                </Link>
+              )}
+              <Button
+                variant="danger"
+                onClick={handleDelete}
+                disabled={isDeleting || isReadOnly}
+                title={isReadOnly ? 'Sign in to delete trips' : undefined}
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </Button>
@@ -113,12 +133,19 @@ export default function TripView({ trip }: TripViewProps) {
 
       {/* Add Booking Button */}
       <div className="flex justify-end">
-        <Link href={`/trips/${trip.id}/bookings/new`}>
-          <Button>
+        {isReadOnly ? (
+          <Button disabled title="Sign in to add bookings">
             <Plus className="h-5 w-5 mr-2" />
             Add Booking
           </Button>
-        </Link>
+        ) : (
+          <Link href={`/trips/${trip.id}/bookings/new`}>
+            <Button>
+              <Plus className="h-5 w-5 mr-2" />
+              Add Booking
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Timeline View */}

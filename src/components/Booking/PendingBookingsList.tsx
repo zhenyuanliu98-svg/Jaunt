@@ -9,9 +9,10 @@ import { CheckCircle, XCircle } from 'lucide-react'
 interface PendingBookingsListProps {
   pendingBookings: any[]
   trips: any[]
+  isReadOnly?: boolean
 }
 
-export default function PendingBookingsList({ pendingBookings, trips }: PendingBookingsListProps) {
+export default function PendingBookingsList({ pendingBookings, trips, isReadOnly = false }: PendingBookingsListProps) {
   const router = useRouter()
   const [processing, setProcessing] = useState<string | null>(null)
 
@@ -26,6 +27,7 @@ export default function PendingBookingsList({ pendingBookings, trips }: PendingB
   }
 
   const handleApprove = async (bookingId: string) => {
+    if (isReadOnly) return
     setProcessing(bookingId)
     // In a real implementation, this would show a modal to select trip and edit details
     alert('This feature will be enhanced to allow trip selection and detail editing')
@@ -33,6 +35,7 @@ export default function PendingBookingsList({ pendingBookings, trips }: PendingB
   }
 
   const handleReject = async (bookingId: string) => {
+    if (isReadOnly) return
     if (!confirm('Are you sure you want to reject this booking?')) {
       return
     }
@@ -96,7 +99,8 @@ export default function PendingBookingsList({ pendingBookings, trips }: PendingB
                   <Button
                     size="sm"
                     onClick={() => handleApprove(booking.id)}
-                    disabled={processing === booking.id}
+                    disabled={processing === booking.id || isReadOnly}
+                    title={isReadOnly ? 'Sign in to review forwarded bookings' : undefined}
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
                     Review
@@ -105,7 +109,8 @@ export default function PendingBookingsList({ pendingBookings, trips }: PendingB
                     size="sm"
                     variant="danger"
                     onClick={() => handleReject(booking.id)}
-                    disabled={processing === booking.id}
+                    disabled={processing === booking.id || isReadOnly}
+                    title={isReadOnly ? 'Sign in to reject forwarded bookings' : undefined}
                   >
                     <XCircle className="h-4 w-4 mr-1" />
                     Reject

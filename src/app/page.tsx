@@ -41,6 +41,10 @@ export default function Home() {
     setIsSubmitting(false)
   }
 
+  const handleDemoExplore = () => {
+    router.push('/dashboard')
+  }
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -114,6 +118,22 @@ export default function Home() {
               size="lg"
             >
               Sign in with Apple
+            </Button>
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold text-gray-900">Just want to explore?</h3>
+              <p className="text-sm text-gray-600">
+                Continue without signing in to see a demo of Jaunt. Your changes won&apos;t be saved until you create an account.
+              </p>
+            </div>
+            <Button
+              type="button"
+              onClick={handleDemoExplore}
+              className="w-full"
+              variant="secondary"
+            >
+              Continue without signing in
             </Button>
           </div>
         </div>
