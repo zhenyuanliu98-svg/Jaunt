@@ -2,7 +2,6 @@ import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import AppleProvider from "next-auth/providers/apple"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { SupabaseAdapter } from "@auth/supabase-adapter"
 import { supabase } from "@/lib/supabase"
 import { generateForwardingEmail } from "@/lib/utils"
 import { randomBytes, scryptSync, timingSafeEqual } from "crypto"
@@ -60,10 +59,6 @@ async function updateUser(id: string, data: Record<string, any>) {
 }
 
 const handler = NextAuth({
-  adapter: SupabaseAdapter({
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!
-  }),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -142,10 +137,10 @@ const handler = NextAuth({
 
       return true
     },
-    async session({ session, user }) {
-      // Add user id to session
-      if (session.user) {
-        const dbUser = await getUserByEmail(session.user.email!)
+    async session({ session, token }) {
+      // Add user id to session from token
+      if (session.user && token.email) {
+        const dbUser = await getUserByEmail(token.email as string)
         if (dbUser) {
           session.user.id = dbUser.id
           session.user.forwardingEmail = dbUser.uniqueForwardEmail ?? undefined
@@ -153,12 +148,20 @@ const handler = NextAuth({
       }
       return session
     },
+    async jwt({ token, user, account }) {
+      // Store user info in token on first sign in
+      if (user) {
+        token.id = user.id
+        token.email = user.email
+      }
+      return token
+    },
   },
   pages: {
     signIn: '/',
   },
   session: {
-    strategy: "database",
+    strategy: "jwt",
   },
 })
 
