@@ -37,6 +37,15 @@ GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxx
 - Create OAuth 2.0 Client ID
 - Add redirect URI: `https://your-app.vercel.app/api/auth/callback/google`
 
+### Email Sign-In (Magic Link)
+```
+EMAIL_SERVER=smtp://user:pass@smtp.yourprovider.com:587
+EMAIL_FROM=Jaunt <login@jaunt.app>
+```
+- Use any SMTP provider (Resend, SendGrid SMTP, Mailgun, etc.)
+- Update the domain and credentials for your provider
+- Required for passwordless email sign-in
+
 ---
 
 ## 📧 Optional Variables (For Email Forwarding Feature)
@@ -165,6 +174,7 @@ Before testing your app:
 - [ ] `GOOGLE_CLIENT_ID` is set
 - [ ] `GOOGLE_CLIENT_SECRET` is set
 - [ ] Google OAuth redirect URI includes Vercel URL
+- [ ] `EMAIL_SERVER` and `EMAIL_FROM` are set (required for email sign-in)
 - [ ] Database schema initialized (`npx prisma db push`)
 - [ ] App builds successfully in Vercel
 - [ ] Can access app at Vercel URL
