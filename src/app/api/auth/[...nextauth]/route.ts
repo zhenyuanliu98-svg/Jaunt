@@ -47,7 +47,7 @@ const handler = NextAuth({
         })
         if (dbUser) {
           session.user.id = dbUser.id
-          session.user.forwardingEmail = dbUser.uniqueForwardEmail
+          session.user.forwardingEmail = dbUser.uniqueForwardEmail ?? undefined
         }
       }
       return session
