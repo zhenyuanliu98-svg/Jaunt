@@ -86,7 +86,12 @@ export const prisma = {
     deleteMany: async ({ where }: { where: any }) => deleteWhere<any>('bookings', where)
   },
   pendingBooking: {
-    findMany: async ({ where }: { where: any }) => many<any>('pending_bookings', where, { column: 'createdAt', ascending: false }),
+    findMany: async ({ where, orderBy }: { where: any; orderBy?: any }) => {
+      const order = orderBy
+        ? { column: Object.keys(orderBy)[0], ascending: orderBy.createdAt !== 'desc' }
+        : { column: 'createdAt', ascending: false }
+      return many<any>('pending_bookings', where, order)
+    },
     create: async ({ data }: { data: any }) => insert<any>('pending_bookings', data),
     updateMany: async ({ where, data }: { where: any; data: any }) => updateWhere<any>('pending_bookings', where, data),
     deleteMany: async ({ where }: { where: any }) => deleteWhere<any>('pending_bookings', where)
