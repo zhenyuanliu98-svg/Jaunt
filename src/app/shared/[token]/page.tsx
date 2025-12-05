@@ -81,7 +81,7 @@ export default async function SharedTripPage({ params }: { params: { token: stri
           {/* Shared Trip Notice */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
-              📋 You're viewing a shared itinerary. This is a read-only view.
+              📋 You&apos;re viewing a shared itinerary. This is a read-only view.
             </p>
           </div>
 
