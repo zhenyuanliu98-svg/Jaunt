@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 
 export async function GET(
   req: NextRequest,
@@ -25,14 +26,6 @@ export async function GET(
     where: {
       id: params.id,
       userId: user.id
-    },
-    include: {
-      bookings: {
-        orderBy: [{ date: 'asc' }, { time: 'asc' }],
-        include: {
-          attachments: true
-        }
-      }
     }
   })
 
@@ -40,7 +33,14 @@ export async function GET(
     return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
   }
 
-  return NextResponse.json(trip)
+  const { data: bookings } = await supabase
+    .from('bookings')
+    .select('*, attachments(*)')
+    .eq('tripId', trip.id)
+    .order('date', { ascending: true })
+    .order('time', { ascending: true })
+
+  return NextResponse.json({ ...trip, bookings: bookings || [] })
 }
 
 export async function PATCH(
