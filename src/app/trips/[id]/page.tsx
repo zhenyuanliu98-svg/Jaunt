@@ -4,7 +4,8 @@ import { prisma } from '@/lib/prisma'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import TripView from '@/components/Trip/TripView'
 
-export default async function TripPage({ params }: { params: { id: string } }) {
+export default async function TripPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession()
 
   if (!session || !session.user) {

@@ -6,7 +6,8 @@ import { Calendar, Plane } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import Link from 'next/link'
 
-export default async function SharedTripPage({ params }: { params: { token: string } }) {
+export default async function SharedTripPage(props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const trip = await prisma.trip.findFirst({
     where: { shareToken: params.token },
     include: {
