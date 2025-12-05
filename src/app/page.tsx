@@ -10,8 +10,8 @@ export default function Home() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
@@ -23,20 +23,19 @@ export default function Home() {
   const handleEmailSignIn = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
-    setMessage('')
 
-    if (!email) {
-      setError('Please enter your email')
+    if (!email || !password) {
+      setError('Please enter your email and password')
       return
     }
 
     setIsSubmitting(true)
-    const result = await signIn('email', { email, redirect: false, callbackUrl: '/dashboard' })
+    const result = await signIn('credentials', { email, password, redirect: false, callbackUrl: '/dashboard' })
 
     if (result?.error) {
-      setError('Unable to send sign-in link. Please try again.')
-    } else {
-      setMessage('Check your email for a sign-in link to continue.')
+      setError(result.error ?? 'Unable to sign in. Please try again.')
+    } else if (result?.url) {
+      router.push(result.url)
     }
 
     setIsSubmitting(false)
@@ -65,7 +64,7 @@ export default function Home() {
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold text-gray-900">Sign in</h2>
             <p className="text-gray-600 text-sm">
-              Sign in with email or continue with your preferred provider.
+              Enter your email and create a password to sign in or register.
             </p>
           </div>
           <form onSubmit={handleEmailSignIn} className="space-y-3">
@@ -77,16 +76,24 @@ export default function Home() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
+            <Input
+              type="password"
+              label="Password"
+              placeholder="Create a password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+            />
             <Button
               type="submit"
               size="lg"
               className="w-full"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Sending link...' : 'Send magic link'}
+              {isSubmitting ? 'Signing in...' : 'Continue with email'}
             </Button>
             {error && <p className="text-sm text-red-600">{error}</p>}
-            {message && <p className="text-sm text-green-600">{message}</p>}
           </form>
           <div className="flex items-center gap-2">
             <div className="h-px flex-1 bg-gray-200" />
