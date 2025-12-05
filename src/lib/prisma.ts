@@ -82,12 +82,14 @@ export const prisma = {
     }
   },
   booking: {
-    create: async ({ data }: { data: any }) => insert<any>('bookings', data)
+    create: async ({ data }: { data: any }) => insert<any>('bookings', data),
+    deleteMany: async ({ where }: { where: any }) => deleteWhere<any>('bookings', where)
   },
   pendingBooking: {
     findMany: async ({ where }: { where: any }) => many<any>('pending_bookings', where, { column: 'createdAt', ascending: false }),
     create: async ({ data }: { data: any }) => insert<any>('pending_bookings', data),
-    updateMany: async ({ where, data }: { where: any; data: any }) => updateWhere<any>('pending_bookings', where, data)
+    updateMany: async ({ where, data }: { where: any; data: any }) => updateWhere<any>('pending_bookings', where, data),
+    deleteMany: async ({ where }: { where: any }) => deleteWhere<any>('pending_bookings', where)
   },
   attachment: {
     create: async ({ data }: { data: any }) => insert<any>('attachments', data)
