@@ -1,4 +1,4 @@
-import { BookingType } from '@/types/enums'
+import { BookingType } from '@prisma/client'
 import { Plane, Home, Car, UtensilsCrossed, Ticket, Train } from 'lucide-react'
 
 interface BookingTypeIconProps {

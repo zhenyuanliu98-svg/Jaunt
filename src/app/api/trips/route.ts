@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { supabase } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession()
@@ -20,19 +19,15 @@ export async function GET(req: NextRequest) {
 
   const trips = await prisma.trip.findMany({
     where: { userId: user.id },
-    orderBy: { startDate: 'desc' }
+    orderBy: { startDate: 'desc' },
+    include: {
+      _count: {
+        select: { bookings: true }
+      }
+    }
   })
 
-  const enriched = await Promise.all(trips.map(async (trip: any) => {
-    const { count } = await supabase
-      .from('bookings')
-      .select('id', { head: true, count: 'exact' })
-      .eq('tripId', trip.id)
-
-    return { ...trip, _count: { bookings: count ?? 0 } }
-  }))
-
-  return NextResponse.json(enriched)
+  return NextResponse.json(trips)
 }
 
 export async function POST(req: NextRequest) {

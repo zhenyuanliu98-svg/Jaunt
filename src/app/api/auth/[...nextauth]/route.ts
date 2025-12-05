@@ -2,8 +2,8 @@ import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import AppleProvider from "next-auth/providers/apple"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { SupabaseAdapter } from "@auth/supabase-adapter"
-import { supabase } from "@/lib/supabase"
+import { PrismaAdapter } from "@auth/prisma-adapter"
+import { prisma } from "@/lib/prisma"
 import { generateForwardingEmail } from "@/lib/utils"
 import { randomBytes, scryptSync, timingSafeEqual } from "crypto"
 
@@ -26,44 +26,8 @@ const verifyPassword = (password: string, storedHash: string) => {
   return timingSafeEqual(derivedHash, storedBuffer)
 }
 
-async function getUserByEmail(email: string) {
-  const { data } = await supabase
-    .from('users')
-    .select('*')
-    .eq('email', email)
-    .single()
-
-  return data
-}
-
-async function createUser(data: Record<string, any>) {
-  const { data: newUser, error } = await supabase
-    .from('users')
-    .insert(data)
-    .select()
-    .single()
-
-  if (error) throw error
-  return newUser
-}
-
-async function updateUser(id: string, data: Record<string, any>) {
-  const { data: updated, error } = await supabase
-    .from('users')
-    .update(data)
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) throw error
-  return updated
-}
-
 const handler = NextAuth({
-  adapter: SupabaseAdapter({
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!
-  }),
+  adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -91,15 +55,19 @@ const handler = NextAuth({
           throw new Error("Password must be at least 8 characters long")
         }
 
-        const existingUser = await getUserByEmail(email)
+        const existingUser = await prisma.user.findUnique({
+          where: { email },
+        })
 
         if (!existingUser) {
-          const newUser = await createUser({
-            email,
-            passwordHash: hashPassword(password),
-            name: "",
-            authProvider: "credentials",
-            uniqueForwardEmail: generateForwardingEmail(),
+          const newUser = await prisma.user.create({
+            data: {
+              email,
+              passwordHash: hashPassword(password),
+              name: "",
+              authProvider: "credentials",
+              uniqueForwardEmail: generateForwardingEmail(),
+            },
           })
 
           return newUser
@@ -124,19 +92,26 @@ const handler = NextAuth({
       // Check if user exists, if not create with unique forwarding email
       if (!user.email) return false
 
-      const existingUser = await getUserByEmail(user.email)
+      const existingUser = await prisma.user.findUnique({
+        where: { email: user.email }
+      })
 
       if (!existingUser) {
-        await createUser({
-          email: user.email,
-          name: user.name || '',
-          authProvider: account?.provider || 'credentials',
-          uniqueForwardEmail: generateForwardingEmail(),
+        await prisma.user.create({
+          data: {
+            email: user.email,
+            name: user.name || '',
+            authProvider: account?.provider || 'credentials',
+            uniqueForwardEmail: generateForwardingEmail(),
+          }
         })
       } else if (!existingUser.uniqueForwardEmail || !existingUser.authProvider) {
-        await updateUser(existingUser.id, {
-          uniqueForwardEmail: existingUser.uniqueForwardEmail || generateForwardingEmail(),
-          authProvider: existingUser.authProvider || account?.provider || 'credentials',
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            uniqueForwardEmail: existingUser.uniqueForwardEmail || generateForwardingEmail(),
+            authProvider: existingUser.authProvider || account?.provider || 'credentials',
+          }
         })
       }
 
@@ -145,7 +120,9 @@ const handler = NextAuth({
     async session({ session, user }) {
       // Add user id to session
       if (session.user) {
-        const dbUser = await getUserByEmail(session.user.email!)
+        const dbUser = await prisma.user.findUnique({
+          where: { email: session.user.email! }
+        })
         if (dbUser) {
           session.user.id = dbUser.id
           session.user.forwardingEmail = dbUser.uniqueForwardEmail ?? undefined

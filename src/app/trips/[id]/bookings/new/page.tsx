@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
-import { BookingType } from '@/types/enums'
+import { BookingType } from '@prisma/client'
 
 export default function NewBookingPage() {
   const router = useRouter()

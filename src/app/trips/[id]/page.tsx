@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { supabase } from '@/lib/supabase'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import TripView from '@/components/Trip/TripView'
 import { demoTrips } from '@/lib/demoData'
@@ -27,6 +26,14 @@ export default async function TripPage(props: { params: Promise<{ id: string }> 
         where: {
           id: params.id,
           userId: user!.id
+        },
+        include: {
+          bookings: {
+            orderBy: [{ date: 'asc' }, { time: 'asc' }],
+            include: {
+              attachments: true
+            }
+          }
         }
       })
 
@@ -34,18 +41,9 @@ export default async function TripPage(props: { params: Promise<{ id: string }> 
     redirect('/dashboard')
   }
 
-  const { data: bookings } = isDemoMode
-    ? { data: trip.bookings }
-    : await supabase
-        .from('bookings')
-        .select('*, attachments(*)')
-        .eq('tripId', trip.id)
-        .order('date', { ascending: true })
-        .order('time', { ascending: true })
-
   return (
     <DashboardLayout>
-      <TripView trip={{ ...trip, bookings: bookings || [] }} isReadOnly={isDemoMode} />
+      <TripView trip={trip} isReadOnly={isDemoMode} />
     </DashboardLayout>
   )
 }
