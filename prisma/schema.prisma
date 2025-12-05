@@ -1,0 +1,104 @@
+// Jaunt Database Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  name              String?
+  authProvider      String    // 'google' or 'apple'
+  uniqueForwardEmail String   @unique // e.g., jason.x7k2@jaunt.app
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  trips             Trip[]
+  pendingBookings   PendingBooking[]
+}
+
+model Trip {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  destination String
+  startDate   DateTime
+  endDate     DateTime
+  shareToken  String?   @unique // for view-only sharing
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+
+  @@index([userId])
+}
+
+enum BookingType {
+  FLIGHT
+  ACCOMMODATION
+  CAR_RENTAL
+  RESTAURANT
+  ACTIVITY
+  TRANSPORT
+}
+
+model Booking {
+  id                 String      @id @default(cuid())
+  tripId             String
+  type               BookingType
+  date               DateTime
+  time               String?
+  endDate            DateTime?
+  endTime            String?
+  confirmationNumber String?
+  notes              String?     @db.Text
+  cost               Decimal?    @db.Decimal(10, 2)
+  typeSpecificData   Json?       // Flexible JSON for type-specific fields
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  trip               Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  attachments        Attachment[]
+
+  @@index([tripId])
+  @@index([date])
+}
+
+enum PendingBookingStatus {
+  PENDING
+  REVIEWED
+  REJECTED
+}
+
+model PendingBooking {
+  id         String                @id @default(cuid())
+  userId     String
+  rawEmail   String                @db.Text
+  parsedData Json?
+  status     PendingBookingStatus  @default(PENDING)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  bookingId  String
+  fileUrl    String
+  fileType   String   // e.g., 'pdf', 'jpg', 'png'
+  fileName   String
+  createdAt  DateTime @default(now())
+
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
