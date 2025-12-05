@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/prisma'
-import { supabase } from '@/lib/supabase'
+import { findUserByEmail, findTripById, getBookingsForTrip, updateTrip, deleteTrip } from '@/lib/db'
 
 export async function GET(
   req: NextRequest,
@@ -14,33 +13,21 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email! }
-  })
+  const user = await findUserByEmail(session.user.email!)
 
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
-  const trip = await prisma.trip.findFirst({
-    where: {
-      id: params.id,
-      userId: user.id
-    }
-  })
+  const trip = await findTripById(params.id, user.id)
 
   if (!trip) {
     return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
   }
 
-  const { data: bookings } = await supabase
-    .from('bookings')
-    .select('*, attachments(*)')
-    .eq('tripId', trip.id)
-    .order('date', { ascending: true })
-    .order('time', { ascending: true })
+  const bookings = await getBookingsForTrip(trip.id)
 
-  return NextResponse.json({ ...trip, bookings: bookings || [] })
+  return NextResponse.json({ ...trip, bookings })
 }
 
 export async function PATCH(
@@ -54,9 +41,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email! }
-  })
+  const user = await findUserByEmail(session.user.email!)
 
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -66,20 +51,15 @@ export async function PATCH(
     const body = await req.json()
     const { name, destination, startDate, endDate } = body
 
-    const trip = await prisma.trip.updateMany({
-      where: {
-        id: params.id,
-        userId: user.id
-      },
-      data: {
-        ...(name && { name }),
-        ...(destination && { destination }),
-        ...(startDate && { startDate: new Date(startDate) }),
-        ...(endDate && { endDate: new Date(endDate) }),
-      }
-    })
+    const updates: any = {}
+    if (name) updates.name = name
+    if (destination) updates.destination = destination
+    if (startDate) updates.startDate = new Date(startDate)
+    if (endDate) updates.endDate = new Date(endDate)
 
-    if (trip.count === 0) {
+    const trip = await updateTrip(params.id, user.id, updates)
+
+    if (!trip || trip.length === 0) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
     }
 
@@ -104,25 +84,20 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email! }
-  })
+  const user = await findUserByEmail(session.user.email!)
 
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
   try {
-    const deleted = await prisma.trip.deleteMany({
-      where: {
-        id: params.id,
-        userId: user.id
-      }
-    })
-
-    if (deleted.count === 0) {
+    // First check if trip exists
+    const trip = await findTripById(params.id, user.id)
+    if (!trip) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
     }
+
+    await deleteTrip(params.id, user.id)
 
     return NextResponse.json({ success: true })
   } catch (error) {

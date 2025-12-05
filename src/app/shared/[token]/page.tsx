@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+import { getTripWithBookingsByShareToken } from '@/lib/db'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card'
 import BookingCard from '@/components/Booking/BookingCard'
 import { Calendar, Plane } from 'lucide-react'
@@ -8,17 +8,7 @@ import Link from 'next/link'
 
 export default async function SharedTripPage(props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
-  const trip = await prisma.trip.findFirst({
-    where: { shareToken: params.token },
-    include: {
-      bookings: {
-        orderBy: [{ date: 'asc' }, { time: 'asc' }],
-        include: {
-          attachments: true
-        }
-      }
-    }
-  })
+  const trip = await getTripWithBookingsByShareToken(params.token)
 
   if (!trip) {
     notFound()

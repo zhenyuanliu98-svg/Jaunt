@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/prisma'
+import { findUserByEmail, findTripById, updateTripShareToken } from '@/lib/db'
 import { generateShareToken } from '@/lib/utils'
 
 export async function POST(
@@ -14,9 +14,7 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email! }
-  })
+  const user = await findUserByEmail(session.user.email!)
 
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -24,12 +22,7 @@ export async function POST(
 
   try {
     // Find the trip and verify ownership
-    const trip = await prisma.trip.findFirst({
-      where: {
-        id: params.id,
-        userId: user.id
-      }
-    })
+    const trip = await findTripById(params.id, user.id)
 
     if (!trip) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
@@ -39,10 +32,7 @@ export async function POST(
     let shareToken = trip.shareToken
     if (!shareToken) {
       shareToken = generateShareToken()
-      await prisma.trip.update({
-        where: { id: params.id },
-        data: { shareToken }
-      })
+      await updateTripShareToken(params.id, shareToken)
     }
 
     const shareUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/shared/${shareToken}`
@@ -68,29 +58,21 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email! }
-  })
+  const user = await findUserByEmail(session.user.email!)
 
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
   try {
-    // Revoke share token
-    const updated = await prisma.trip.updateMany({
-      where: {
-        id: params.id,
-        userId: user.id
-      },
-      data: {
-        shareToken: null
-      }
-    })
-
-    if (updated.count === 0) {
+    // Verify trip exists and belongs to user
+    const trip = await findTripById(params.id, user.id)
+    if (!trip) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
     }
+
+    // Revoke share token
+    await updateTripShareToken(params.id, null)
 
     return NextResponse.json({ success: true })
   } catch (error) {

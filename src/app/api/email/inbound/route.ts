@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { findUserByForwardEmail, createPendingBooking } from '@/lib/db'
 
 /**
  * Webhook endpoint for incoming emails (SendGrid Inbound Parse)
@@ -25,9 +25,7 @@ export async function POST(req: NextRequest) {
     const uniqueEmail = to.split(',')[0].trim().toLowerCase()
 
     // Find user by forwarding email
-    const user = await prisma.user.findUnique({
-      where: { uniqueForwardEmail: uniqueEmail }
-    })
+    const user = await findUserByForwardEmail(uniqueEmail)
 
     if (!user) {
       console.log('User not found for email:', uniqueEmail)
@@ -38,18 +36,16 @@ export async function POST(req: NextRequest) {
     const parsedData = await parseBookingEmail(subject, text, html)
 
     // Create pending booking for user to review
-    await prisma.pendingBooking.create({
-      data: {
-        userId: user.id,
-        rawEmail: JSON.stringify({
-          from,
-          subject,
-          text,
-          html: html ? html.substring(0, 5000) : null, // Truncate HTML to prevent DB bloat
-        }),
-        parsedData: parsedData,
-        status: 'PENDING',
-      }
+    await createPendingBooking({
+      userId: user.id,
+      rawEmail: JSON.stringify({
+        from,
+        subject,
+        text,
+        html: html ? html.substring(0, 5000) : null, // Truncate HTML to prevent DB bloat
+      }),
+      parsedData: parsedData,
+      status: 'PENDING',
     })
 
     return NextResponse.json({ success: true })
