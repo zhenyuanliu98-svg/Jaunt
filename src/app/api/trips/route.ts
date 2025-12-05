@@ -1,82 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/prisma'
-import { supabase } from '@/lib/supabase'
+import { NextResponse } from 'next/server'
+import { getSupabaseClient } from '@/lib/supabase'
 
-export async function GET(req: NextRequest) {
-  const session = await getServerSession()
+export async function GET(request: Request) {
+  const supabase = getSupabaseClient()
+  const { searchParams } = new URL(request.url)
+  const userId = searchParams.get('userId')
 
-  if (!session || !session.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!userId) {
+    return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email! }
-  })
+  const { count } = await supabase
+    .from('trips')
+    .select('*', { count: 'exact', head: true })
+    .eq('userId', userId)
 
-  if (!user) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  }
-
-  const trips = await prisma.trip.findMany({
-    where: { userId: user.id },
-    orderBy: { startDate: 'desc' }
-  })
-
-  const enriched = await Promise.all(trips.map(async (trip: any) => {
-    const { count } = await supabase
-      .from('bookings')
-      .select('id', { head: true, count: 'exact' })
-      .eq('tripId', trip.id)
-
-    return { ...trip, _count: { bookings: count ?? 0 } }
-  }))
-
-  return NextResponse.json(enriched)
-}
-
-export async function POST(req: NextRequest) {
-  const session = await getServerSession()
-
-  if (!session || !session.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email! }
-  })
-
-  if (!user) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  }
-
-  try {
-    const body = await req.json()
-    const { name, destination, startDate, endDate } = body
-
-    if (!name || !destination || !startDate || !endDate) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
-
-    const trip = await prisma.trip.create({
-      data: {
-        userId: user.id,
-        name,
-        destination,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-      }
-    })
-
-    return NextResponse.json(trip, { status: 201 })
-  } catch (error) {
-    console.error('Error creating trip:', error)
-    return NextResponse.json(
-      { error: 'Failed to create trip' },
-      { status: 500 }
-    )
-  }
+  return NextResponse.json({ count })
 }

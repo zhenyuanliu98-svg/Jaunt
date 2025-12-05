@@ -1,9 +1,10 @@
-import { supabase } from './supabase'
+import { getSupabaseClient } from './supabase'
 import { BookingType, PendingBookingStatus } from '@/types/enums'
 
 type Where<T> = Partial<T>
 
 async function single<T>(table: string, where: Where<T>) {
+  const supabase = getSupabaseClient()
   const query = Object.entries(where).reduce((q, [key, value]) => q.eq(key, value as never), supabase.from(table).select('*'))
   const { data, error } = await query.single()
   if (error) return null
@@ -11,6 +12,7 @@ async function single<T>(table: string, where: Where<T>) {
 }
 
 async function many<T>(table: string, where?: Where<T>, orderBy?: { column: string; ascending: boolean }) {
+  const supabase = getSupabaseClient()
   let query = supabase.from(table).select('*')
   if (where) {
     Object.entries(where).forEach(([key, value]) => {
@@ -25,12 +27,14 @@ async function many<T>(table: string, where?: Where<T>, orderBy?: { column: stri
 }
 
 async function insert<T>(table: string, values: Partial<T>) {
+  const supabase = getSupabaseClient()
   const { data, error } = await supabase.from(table).insert(values).select().single()
   if (error) throw error
   return data as T
 }
 
 async function updateWhere<T>(table: string, where: Where<T>, values: Partial<T>) {
+  const supabase = getSupabaseClient()
   let query = supabase.from(table).update(values)
   Object.entries(where).forEach(([key, value]) => {
     query = query.eq(key, value as never)
@@ -41,6 +45,7 @@ async function updateWhere<T>(table: string, where: Where<T>, values: Partial<T>
 }
 
 async function deleteWhere<T>(table: string, where: Where<T>) {
+  const supabase = getSupabaseClient()
   let query = supabase.from(table).delete()
   Object.entries(where).forEach(([key, value]) => {
     query = query.eq(key, value as never)
@@ -77,12 +82,19 @@ export const prisma = {
     }
   },
   booking: {
-    create: async ({ data }: { data: any }) => insert<any>('bookings', data)
+    create: async ({ data }: { data: any }) => insert<any>('bookings', data),
+    deleteMany: async ({ where }: { where: any }) => deleteWhere<any>('bookings', where)
   },
   pendingBooking: {
-    findMany: async ({ where }: { where: any }) => many<any>('pending_bookings', where, { column: 'createdAt', ascending: false }),
+    findMany: async ({ where, orderBy }: { where: any; orderBy?: any }) => {
+      const order = orderBy
+        ? { column: Object.keys(orderBy)[0], ascending: orderBy.createdAt !== 'desc' }
+        : { column: 'createdAt', ascending: false }
+      return many<any>('pending_bookings', where, order)
+    },
     create: async ({ data }: { data: any }) => insert<any>('pending_bookings', data),
-    updateMany: async ({ where, data }: { where: any; data: any }) => updateWhere<any>('pending_bookings', where, data)
+    updateMany: async ({ where, data }: { where: any; data: any }) => updateWhere<any>('pending_bookings', where, data),
+    deleteMany: async ({ where }: { where: any }) => deleteWhere<any>('pending_bookings', where)
   },
   attachment: {
     create: async ({ data }: { data: any }) => insert<any>('attachments', data)

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import TripView from '@/components/Trip/TripView'
 import { demoTrips } from '@/lib/demoData'
@@ -10,6 +10,7 @@ export default async function TripPage(props: { params: Promise<{ id: string }> 
   const params = await props.params;
   const session = await getServerSession()
   const isDemoMode = !session || !session.user
+  const supabase = getSupabaseClient()
 
   const user = isDemoMode
     ? null
