@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card'
 import BookingCard from '@/components/Booking/BookingCard'
 import { Calendar, Plane } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 import Link from 'next/link'
 
 export default async function SharedTripPage(props: { params: Promise<{ token: string }> }) {
@@ -26,7 +26,7 @@ export default async function SharedTripPage(props: { params: Promise<{ token: s
 
   // Group bookings by date
   const bookingsByDate = trip.bookings.reduce((acc: any, booking: any) => {
-    const dateKey = format(parseISO(booking.date), 'yyyy-MM-dd')
+    const dateKey = format(booking.date, 'yyyy-MM-dd')
     if (!acc[dateKey]) {
       acc[dateKey] = []
     }
@@ -71,7 +71,7 @@ export default async function SharedTripPage(props: { params: Promise<{ token: s
                   <div className="flex items-center mt-4 text-gray-600">
                     <Calendar className="h-5 w-5 mr-2" />
                     <span>
-                      {format(parseISO(trip.startDate), 'MMM dd, yyyy')} - {format(parseISO(trip.endDate), 'MMM dd, yyyy')}
+                      {format(trip.startDate, 'MMM dd, yyyy')} - {format(trip.endDate, 'MMM dd, yyyy')}
                     </span>
                   </div>
                 </div>
@@ -98,7 +98,7 @@ export default async function SharedTripPage(props: { params: Promise<{ token: s
               {sortedDates.map((dateKey) => (
                 <div key={dateKey}>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {format(parseISO(dateKey), 'EEEE, MMMM dd, yyyy')}
+                    {format(new Date(dateKey), 'EEEE, MMMM dd, yyyy')}
                   </h3>
                   <div className="space-y-4">
                     {bookingsByDate[dateKey].map((booking: any) => (

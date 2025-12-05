@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button'
 import { Plus, Share2, Pencil, Trash2, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import BookingCard from '@/components/Booking/BookingCard'
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 
 interface TripViewProps {
   trip: any
@@ -63,7 +63,7 @@ export default function TripView({ trip }: TripViewProps) {
 
   // Group bookings by date
   const bookingsByDate = trip.bookings.reduce((acc: any, booking: any) => {
-    const dateKey = format(parseISO(booking.date), 'yyyy-MM-dd')
+    const dateKey = format(booking.date, 'yyyy-MM-dd')
     if (!acc[dateKey]) {
       acc[dateKey] = []
     }
@@ -87,7 +87,7 @@ export default function TripView({ trip }: TripViewProps) {
               <div className="flex items-center mt-4 text-gray-600">
                 <Calendar className="h-5 w-5 mr-2" />
                 <span>
-                  {format(parseISO(trip.startDate), 'MMM dd, yyyy')} - {format(parseISO(trip.endDate), 'MMM dd, yyyy')}
+                  {format(trip.startDate, 'MMM dd, yyyy')} - {format(trip.endDate, 'MMM dd, yyyy')}
                 </span>
               </div>
             </div>
@@ -136,7 +136,7 @@ export default function TripView({ trip }: TripViewProps) {
           {sortedDates.map((dateKey) => (
             <div key={dateKey}>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {format(parseISO(dateKey), 'EEEE, MMMM dd, yyyy')}
+                {format(new Date(dateKey), 'EEEE, MMMM dd, yyyy')}
               </h3>
               <div className="space-y-4">
                 {bookingsByDate[dateKey].map((booking: any) => (
