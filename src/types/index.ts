@@ -1,4 +1,4 @@
-import { BookingType } from '@prisma/client'
+import { BookingType } from './enums'
 
 // Flight specific data
 export interface FlightData {

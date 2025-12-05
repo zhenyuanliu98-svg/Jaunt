@@ -1,0 +1,14 @@
+export enum BookingType {
+  FLIGHT = 'FLIGHT',
+  ACCOMMODATION = 'ACCOMMODATION',
+  CAR_RENTAL = 'CAR_RENTAL',
+  RESTAURANT = 'RESTAURANT',
+  ACTIVITY = 'ACTIVITY',
+  TRANSPORT = 'TRANSPORT'
+}
+
+export enum PendingBookingStatus {
+  PENDING = 'PENDING',
+  REVIEWED = 'REVIEWED',
+  REJECTED = 'REJECTED'
+}

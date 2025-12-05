@@ -1,4 +1,4 @@
-import { BookingType, PendingBookingStatus } from '@prisma/client'
+import { BookingType, PendingBookingStatus } from '@/types/enums'
 
 export const demoTrips = [
   {
