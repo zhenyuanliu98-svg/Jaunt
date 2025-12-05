@@ -3,7 +3,7 @@ import GoogleProvider from "next-auth/providers/google"
 import AppleProvider from "next-auth/providers/apple"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { SupabaseAdapter } from "@auth/supabase-adapter"
-import { supabase } from "@/lib/supabase"
+import { getSupabaseClient } from "@/lib/supabase"
 import { generateForwardingEmail } from "@/lib/utils"
 import { randomBytes, scryptSync, timingSafeEqual } from "crypto"
 
@@ -27,6 +27,7 @@ const verifyPassword = (password: string, storedHash: string) => {
 }
 
 async function getUserByEmail(email: string) {
+  const supabase = getSupabaseClient()
   const { data } = await supabase
     .from('users')
     .select('*')
@@ -37,6 +38,7 @@ async function getUserByEmail(email: string) {
 }
 
 async function createUser(data: Record<string, any>) {
+  const supabase = getSupabaseClient()
   const { data: newUser, error } = await supabase
     .from('users')
     .insert(data)
@@ -48,6 +50,7 @@ async function createUser(data: Record<string, any>) {
 }
 
 async function updateUser(id: string, data: Record<string, any>) {
+  const supabase = getSupabaseClient()
   const { data: updated, error } = await supabase
     .from('users')
     .update(data)
@@ -62,7 +65,7 @@ async function updateUser(id: string, data: Record<string, any>) {
 const handler = NextAuth({
   adapter: SupabaseAdapter({
     url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!
+    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
   }),
   providers: [
     GoogleProvider({
