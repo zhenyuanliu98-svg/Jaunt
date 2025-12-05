@@ -52,6 +52,7 @@ model User {
   id                 String    @id @default(cuid())
   email              String?   @unique
   emailVerified      DateTime?
+  passwordHash       String?
   name               String?
   image              String?
   authProvider       String?   // 'google' or 'apple'

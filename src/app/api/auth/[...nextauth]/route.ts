@@ -1,10 +1,30 @@
 import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import AppleProvider from "next-auth/providers/apple"
-import EmailProvider from "next-auth/providers/email"
+import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import { generateForwardingEmail } from "@/lib/utils"
+import { randomBytes, scryptSync, timingSafeEqual } from "crypto"
+
+const hashPassword = (password: string) => {
+  const salt = randomBytes(16).toString("hex")
+  const hash = scryptSync(password, salt, 64).toString("hex")
+  return `${salt}:${hash}`
+}
+
+const verifyPassword = (password: string, storedHash: string) => {
+  const [salt, hash] = storedHash.split(":")
+
+  if (!salt || !hash) return false
+
+  const derivedHash = scryptSync(password, salt, 64)
+  const storedBuffer = Buffer.from(hash, "hex")
+
+  if (derivedHash.length !== storedBuffer.length) return false
+
+  return timingSafeEqual(derivedHash, storedBuffer)
+}
 
 const handler = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -17,9 +37,54 @@ const handler = NextAuth({
       clientId: process.env.APPLE_ID!,
       clientSecret: process.env.APPLE_TEAM_ID!,
     }),
-    EmailProvider({
-      server: process.env.EMAIL_SERVER!,
-      from: process.env.EMAIL_FROM!,
+    CredentialsProvider({
+      name: "Email and Password",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Please provide both email and password")
+        }
+
+        const email = credentials.email.toLowerCase().trim()
+        const password = credentials.password
+
+        if (password.length < 8) {
+          throw new Error("Password must be at least 8 characters long")
+        }
+
+        const existingUser = await prisma.user.findUnique({
+          where: { email },
+        })
+
+        if (!existingUser) {
+          const newUser = await prisma.user.create({
+            data: {
+              email,
+              passwordHash: hashPassword(password),
+              name: "",
+              authProvider: "credentials",
+              uniqueForwardEmail: generateForwardingEmail(),
+            },
+          })
+
+          return newUser
+        }
+
+        if (!existingUser.passwordHash) {
+          throw new Error("Please continue with your existing sign-in method")
+        }
+
+        const isValidPassword = verifyPassword(password, existingUser.passwordHash)
+
+        if (!isValidPassword) {
+          throw new Error("Invalid email or password")
+        }
+
+        return existingUser
+      },
     }),
   ],
   callbacks: {
@@ -36,7 +101,7 @@ const handler = NextAuth({
           data: {
             email: user.email,
             name: user.name || '',
-            authProvider: account?.provider || 'google',
+            authProvider: account?.provider || 'credentials',
             uniqueForwardEmail: generateForwardingEmail(),
           }
         })
@@ -45,7 +110,7 @@ const handler = NextAuth({
           where: { id: existingUser.id },
           data: {
             uniqueForwardEmail: existingUser.uniqueForwardEmail || generateForwardingEmail(),
-            authProvider: existingUser.authProvider || account?.provider || 'google',
+            authProvider: existingUser.authProvider || account?.provider || 'credentials',
           }
         })
       }
