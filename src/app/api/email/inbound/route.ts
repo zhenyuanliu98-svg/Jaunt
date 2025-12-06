@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { findUserByForwardEmail, createPendingBooking } from '@/lib/db'
+import OpenAI from 'openai'
 
 /**
  * Webhook endpoint for incoming emails (SendGrid Inbound Parse)
@@ -59,10 +60,129 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Basic email parsing logic
- * In production, this would use AI/ML or more sophisticated parsing
+ * OpenAI-powered email parsing logic
+ * Uses GPT-4 to intelligently extract booking information from emails
  */
 async function parseBookingEmail(subject: string, text: string, html: string): Promise<any> {
+  // If OpenAI API key is not configured, fall back to basic parsing
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn('OPENAI_API_KEY not configured, using basic parsing')
+    return fallbackParseBookingEmail(subject, text)
+  }
+
+  try {
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+
+    const emailContent = `
+Subject: ${subject}
+
+${text}
+    `.trim()
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `You are an AI assistant that extracts booking information from travel-related emails.
+Your task is to analyze the email content and extract structured booking data.
+
+Return a JSON object with the following structure:
+{
+  "type": "FLIGHT" | "ACCOMMODATION" | "CAR_RENTAL" | "RESTAURANT" | "ACTIVITY" | "TRANSPORT",
+  "date": "YYYY-MM-DD" (start/departure date),
+  "time": "HH:MM" (optional, 24-hour format),
+  "endDate": "YYYY-MM-DD" (optional, for multi-day bookings like hotels),
+  "endTime": "HH:MM" (optional),
+  "confirmationNumber": "string" (optional),
+  "notes": "string" (optional, any additional relevant info),
+  "cost": number (optional, total cost if mentioned),
+  "typeSpecificData": {
+    // For FLIGHT:
+    "airline": "string",
+    "flightNumber": "string",
+    "departureAirport": "string (airport code if available, otherwise name)",
+    "arrivalAirport": "string (airport code if available, otherwise name)",
+    "departureTime": "HH:MM" (optional),
+    "arrivalTime": "HH:MM" (optional)
+
+    // For ACCOMMODATION:
+    "propertyName": "string",
+    "address": "string",
+    "checkInTime": "HH:MM" (optional),
+    "checkOutTime": "HH:MM" (optional)
+
+    // For CAR_RENTAL:
+    "company": "string",
+    "pickupLocation": "string",
+    "dropoffLocation": "string",
+    "pickupTime": "HH:MM" (optional),
+    "dropoffTime": "HH:MM" (optional)
+
+    // For RESTAURANT:
+    "name": "string",
+    "address": "string",
+    "partySize": number (optional)
+
+    // For ACTIVITY:
+    "name": "string",
+    "location": "string",
+    "description": "string" (optional)
+
+    // For TRANSPORT (train, bus, etc):
+    "operator": "string",
+    "route": "string",
+    "departureStation": "string",
+    "arrivalStation": "string",
+    "departureTime": "HH:MM" (optional),
+    "arrivalTime": "HH:MM" (optional)
+  }
+}
+
+Important:
+- Only include fields that you can extract from the email
+- Dates must be in YYYY-MM-DD format
+- Times must be in 24-hour HH:MM format
+- If you're unsure about the booking type, make your best guess
+- Extract as much information as possible
+- Return only valid JSON, no additional text`,
+        },
+        {
+          role: 'user',
+          content: emailContent,
+        },
+      ],
+      temperature: 0.1,
+      response_format: { type: 'json_object' },
+    })
+
+    const result = completion.choices[0].message.content
+    if (!result) {
+      throw new Error('No response from OpenAI')
+    }
+
+    const parsed = JSON.parse(result)
+
+    // Validate that we got at least a type
+    if (!parsed.type) {
+      throw new Error('No booking type detected')
+    }
+
+    return parsed
+  } catch (error) {
+    console.error('Error parsing email with OpenAI:', error)
+    // Fallback to basic parsing if OpenAI fails
+    return fallbackParseBookingEmail(subject, text)
+  }
+}
+
+/**
+ * Fallback basic email parsing logic (regex-based)
+ * Used when OpenAI is not available or fails
+ */
+function fallbackParseBookingEmail(subject: string, text: string): any {
   const parsed: any = {
     type: detectBookingType(subject, text),
     detectedFields: {},
