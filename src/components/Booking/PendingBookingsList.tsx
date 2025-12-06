@@ -85,13 +85,59 @@ export default function PendingBookingsList({ pendingBookings, trips, isReadOnly
                       </span>
                     </div>
                   )}
-                  {parsedData.detectedFields && Object.keys(parsedData.detectedFields).length > 0 && (
+                  {parsedData && (
                     <div className="mt-4 space-y-1">
-                      {Object.entries(parsedData.detectedFields).map(([key, value]) => (
-                        <p key={key} className="text-sm text-gray-600">
-                          <span className="font-medium">{key}:</span> {String(value)}
+                      {parsedData.date && (
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Date:</span> {parsedData.date}
+                          {parsedData.time && ` at ${parsedData.time}`}
                         </p>
-                      ))}
+                      )}
+                      {parsedData.endDate && (
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">End Date:</span> {parsedData.endDate}
+                          {parsedData.endTime && ` at ${parsedData.endTime}`}
+                        </p>
+                      )}
+                      {parsedData.confirmationNumber && (
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Confirmation:</span> {parsedData.confirmationNumber}
+                        </p>
+                      )}
+                      {parsedData.cost && (
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Cost:</span> ${parsedData.cost}
+                        </p>
+                      )}
+
+                      {/* Type-specific data */}
+                      {parsedData.typeSpecificData && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Details</p>
+                          {Object.entries(parsedData.typeSpecificData).map(([key, value]) => (
+                            <p key={key} className="text-sm text-gray-600">
+                              <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span> {String(value)}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Fallback for old format (detectedFields) */}
+                      {parsedData.detectedFields && Object.keys(parsedData.detectedFields).length > 0 && !parsedData.typeSpecificData && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          {Object.entries(parsedData.detectedFields).map(([key, value]) => (
+                            <p key={key} className="text-sm text-gray-600">
+                              <span className="font-medium">{key}:</span> {String(value)}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
+                      {parsedData.notes && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          <span className="font-medium">Notes:</span> {parsedData.notes}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

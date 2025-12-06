@@ -25,7 +25,7 @@ A clean, minimal web application for managing all your travel bookings in one un
 
 - **Trip Management**: Create, edit, and organize trips with destinations and dates
 - **Booking Management**: Track flights, accommodations, car rentals, restaurants, activities, and more
-- **Email Forwarding**: Forward confirmation emails to automatically parse and add bookings
+- **🎯 Email Forwarding with AI**: Forward booking confirmation emails to your unique address - OpenAI automatically extracts and parses all details (flights, hotels, car rentals, etc.)
 - **Timeline View**: Beautiful chronological view of your entire itinerary
 - **Trip Sharing**: Share view-only links with travel companions
 - **Mobile Responsive**: Works seamlessly on all devices
@@ -34,9 +34,10 @@ A clean, minimal web application for managing all your travel bookings in one un
 
 - **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes
-- **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: NextAuth.js (Google & Apple OAuth)
+- **Database**: PostgreSQL with Supabase
+- **Authentication**: NextAuth.js (Google & Apple OAuth, Email/Password)
 - **Email**: SendGrid for inbound email parsing
+- **AI**: OpenAI GPT-4 for intelligent booking extraction
 
 ## Getting Started
 
@@ -70,8 +71,8 @@ cp .env.example .env
 
 3. Initialize database:
 ```bash
-npx prisma generate
-npx prisma db push
+# Database tables will be auto-created by Supabase
+# See DATABASE_INIT.md for SQL schema if needed
 ```
 
 4. Run development server:
@@ -108,6 +109,7 @@ jaunt/
 
 - **[QUICKSTART_VERCEL.md](./QUICKSTART_VERCEL.md)** - Deploy to Vercel in 5 minutes
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Comprehensive deployment guide
+- **[EMAIL_FORWARDING.md](./EMAIL_FORWARDING.md)** - Email forwarding setup guide (SendGrid + OpenAI)
 - **[ENV_VARS_CHECKLIST.md](./ENV_VARS_CHECKLIST.md)** - Environment variables reference
 - **[SETUP.md](./SETUP.md)** - Detailed local development setup
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Technical architecture documentation
@@ -128,7 +130,7 @@ Share read-only links with travel companions.
 For questions or issues:
 1. Check the documentation above
 2. Review the code comments
-3. Inspect the Prisma schema at `prisma/schema.prisma`
+3. Check the Supabase database schema in DATABASE_INIT.md
 
 ## License
 
