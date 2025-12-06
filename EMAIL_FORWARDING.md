@@ -5,7 +5,7 @@ This guide explains how to set up and use the email forwarding feature in Jaunt,
 ## Overview
 
 The email forwarding feature enables:
-- Each user gets a unique forwarding email address (e.g., `abc12345@jauntapp.org`)
+- Each user gets a unique forwarding email address (e.g., `abc12345@mail.jauntapp.org`)
 - Users forward booking confirmation emails (flights, hotels, car rentals, etc.) to this address
 - OpenAI GPT-4 intelligently extracts booking details from the email
 - Parsed bookings appear in the user's pending bookings list for review
@@ -53,36 +53,30 @@ Booking added to trip
 1. Go to **Settings** → **Inbound Parse**
 2. Click **Add Host & URL**
 3. Configure:
-   - **Subdomain**: Leave blank (to receive all emails at your domain)
+   - **Subdomain**: `mail` (or `forward`, `email`, etc.)
    - **Domain**: `jauntapp.org` (your custom domain)
    - **Destination URL**: `https://jauntapp.org/api/email/inbound`
    - **Check spam**: ✓ Check incoming emails for spam
    - **POST raw MIME**: Leave unchecked (we use parsed form data)
 4. Click **Add**
 
+**Important**: The subdomain you choose here (e.g., `mail`) must match the MX record subdomain you created in Step C.
+
 #### C. Configure DNS (MX Records)
-Add the following MX records to your domain's DNS settings:
+
+**IMPORTANT**: SendGrid requires you to use a **subdomain** for email forwarding, not the root domain.
+
+Add an MX record for a subdomain (e.g., `mail.jauntapp.org`):
 
 ```
-Host: @
 Type: MX
+Host: mail (this creates mail.jauntapp.org)
 Priority: 10
 Value: mx.sendgrid.net
+TTL: Auto
 ```
 
-**Important**: If you want to use a subdomain for forwarding (e.g., `forward.jauntapp.org`), update your MX records accordingly:
-
-```
-Host: forward
-Type: MX
-Priority: 10
-Value: mx.sendgrid.net
-```
-
-Then update `EMAIL_DOMAIN` in `.env`:
-```
-EMAIL_DOMAIN="forward.jauntapp.org"
-```
+**Note**: You cannot use the root domain (@) for SendGrid Inbound Parse. You must use a subdomain like `mail`, `forward`, `email`, etc.
 
 ### 2. Configure Environment Variables
 
@@ -92,8 +86,8 @@ Update your `.env` file with the following:
 # SendGrid
 SENDGRID_API_KEY="SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-# Email Domain (where users forward emails) - MUST match SendGrid configuration
-EMAIL_DOMAIN="jauntapp.org"
+# Email Domain (where users forward emails) - MUST match SendGrid Inbound Parse subdomain
+EMAIL_DOMAIN="mail.jauntapp.org"
 
 # OpenAI API Key (for intelligent email parsing)
 OPENAI_API_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -155,14 +149,14 @@ vercel --prod
 1. Sign in to Jaunt
 2. Go to the Dashboard
 3. Find the "Email Forwarding" card
-4. Copy your unique forwarding email (e.g., `abc12345@jauntapp.org`)
+4. Copy your unique forwarding email (e.g., `abc12345@mail.jauntapp.org`)
 
 #### B. Send a Test Email
 Forward a real booking confirmation email to your forwarding address, or send a test email:
 
 **Sample Test Email (Flight Booking)**
 ```
-To: abc12345@jauntapp.org
+To: abc12345@mail.jauntapp.org
 Subject: Your Flight Confirmation - AA123
 
 Dear Customer,
