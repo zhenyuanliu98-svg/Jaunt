@@ -56,9 +56,19 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
 
       const { shareUrl } = await response.json()
 
-      // Copy to clipboard
-      await navigator.clipboard.writeText(shareUrl)
-      alert(`Share link copied to clipboard!\n\n${shareUrl}`)
+      // Try to copy to clipboard with fallback
+      try {
+        await navigator.clipboard.writeText(shareUrl)
+        alert(`Share link copied to clipboard!\n\n${shareUrl}`)
+      } catch (clipboardError) {
+        // Clipboard API failed - show URL for manual copy
+        const message = `Share link (select and copy):\n\n${shareUrl}\n\nNote: Clipboard access was denied. Please copy the link manually.`
+
+        // Use a prompt as a workaround - it allows text selection
+        if (window.prompt(message, shareUrl)) {
+          // User clicked OK after copying
+        }
+      }
     } catch (error) {
       console.error('Error sharing trip:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate share link'
