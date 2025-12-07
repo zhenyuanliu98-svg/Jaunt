@@ -28,10 +28,29 @@ export default function PendingBookingsList({ pendingBookings, trips, isReadOnly
 
   const handleApprove = async (bookingId: string) => {
     if (isReadOnly) return
+    if (!confirm('Are you sure you want to approve this booking?')) {
+      return
+    }
+
     setProcessing(bookingId)
-    // In a real implementation, this would show a modal to select trip and edit details
-    alert('This feature will be enhanced to allow trip selection and detail editing')
-    setProcessing(null)
+    try {
+      const response = await fetch(`/api/bookings/pending/${bookingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'REVIEWED' }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to approve booking')
+      }
+
+      router.refresh()
+    } catch (error) {
+      console.error('Error approving booking:', error)
+      alert('Failed to approve booking')
+    } finally {
+      setProcessing(null)
+    }
   }
 
   const handleReject = async (bookingId: string) => {
