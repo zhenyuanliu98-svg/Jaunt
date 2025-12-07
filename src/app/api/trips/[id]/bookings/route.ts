@@ -37,6 +37,7 @@ export async function POST(
       confirmationNumber,
       notes,
       cost,
+      city,
       typeSpecificData,
     } = body
 
@@ -57,6 +58,7 @@ export async function POST(
       confirmationNumber: confirmationNumber || null,
       notes: notes || null,
       cost: cost ? parseFloat(cost) : null,
+      city: city || null,
       typeSpecificData: typeSpecificData || null,
     })
 

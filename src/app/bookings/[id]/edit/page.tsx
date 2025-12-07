@@ -1,16 +1,20 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { BookingType } from '@/types/enums'
+import { format } from 'date-fns'
 
-export default function NewBookingPage() {
+export default function EditBookingPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
+  const tripId = searchParams.get('tripId')
+
   const [formData, setFormData] = useState({
     type: 'FLIGHT' as BookingType,
     date: '',
@@ -39,11 +43,63 @@ export default function NewBookingPage() {
     departureStation: '',
     arrivalStation: '',
   })
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    const fetchBooking = async () => {
+      try {
+        const response = await fetch(`/api/bookings/${params.id}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch booking')
+        }
+
+        const booking = await response.json()
+
+        // Populate form with existing booking data
+        const data = booking.typeSpecificData || {}
+        setFormData({
+          type: booking.type,
+          date: booking.date ? format(new Date(booking.date), 'yyyy-MM-dd') : '',
+          time: booking.time || '',
+          endDate: booking.endDate ? format(new Date(booking.endDate), 'yyyy-MM-dd') : '',
+          endTime: booking.endTime || '',
+          confirmationNumber: booking.confirmationNumber || '',
+          notes: booking.notes || '',
+          cost: booking.cost?.toString() || '',
+          city: booking.city || '',
+          // Type-specific fields
+          airline: data.airline || '',
+          flightNumber: data.flightNumber || '',
+          departureAirport: data.departureAirport || '',
+          arrivalAirport: data.arrivalAirport || '',
+          propertyName: data.propertyName || '',
+          address: data.address || '',
+          company: data.company || '',
+          pickupLocation: data.pickupLocation || '',
+          dropoffLocation: data.dropoffLocation || '',
+          name: data.name || '',
+          partySize: data.partySize?.toString() || '',
+          location: data.location || '',
+          operator: data.operator || '',
+          route: data.route || '',
+          departureStation: data.departureStation || '',
+          arrivalStation: data.arrivalStation || '',
+        })
+        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching booking:', error)
+        alert('Failed to load booking. Please try again.')
+        router.back()
+      }
+    }
+
+    fetchBooking()
+  }, [params.id, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    setSubmitting(true)
 
     try {
       // Build type-specific data based on booking type
@@ -107,22 +163,26 @@ export default function NewBookingPage() {
         typeSpecificData,
       }
 
-      const response = await fetch(`/api/trips/${params.id}/bookings`, {
-        method: 'POST',
+      const response = await fetch(`/api/bookings/${params.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bookingData),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create booking')
+        throw new Error('Failed to update booking')
       }
 
-      router.push(`/trips/${params.id}`)
+      if (tripId) {
+        router.push(`/trips/${tripId}`)
+      } else {
+        router.back()
+      }
     } catch (error) {
-      console.error('Error creating booking:', error)
-      alert('Failed to create booking. Please try again.')
+      console.error('Error updating booking:', error)
+      alert('Failed to update booking. Please try again.')
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
@@ -303,12 +363,26 @@ export default function NewBookingPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto">
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-gray-500">Loading booking...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle>Add Booking</CardTitle>
+            <CardTitle>Edit Booking</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -417,8 +491,8 @@ export default function NewBookingPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Creating...' : 'Add Booking'}
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? 'Updating...' : 'Update Booking'}
                 </Button>
               </div>
             </form>
