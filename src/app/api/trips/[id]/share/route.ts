@@ -31,8 +31,16 @@ export async function POST(
     // Generate share token if it doesn't exist
     let shareToken = trip.shareToken
     if (!shareToken) {
-      shareToken = generateShareToken()
-      await updateTripShareToken(params.id, shareToken)
+      try {
+        shareToken = generateShareToken()
+        await updateTripShareToken(params.id, shareToken)
+      } catch (updateError) {
+        console.error('Error updating share token:', updateError)
+        return NextResponse.json(
+          { error: 'Failed to update share token. Please check database permissions.' },
+          { status: 500 }
+        )
+      }
     }
 
     const shareUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/shared/${shareToken}`
@@ -40,8 +48,9 @@ export async function POST(
     return NextResponse.json({ shareUrl, shareToken })
   } catch (error) {
     console.error('Error generating share link:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to generate share link' },
+      { error: `Failed to generate share link: ${errorMessage}` },
       { status: 500 }
     )
   }
