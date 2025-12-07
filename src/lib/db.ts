@@ -224,6 +224,18 @@ export async function updatePendingBooking(bookingId: string, userId: string, st
   return data
 }
 
+export async function findPendingBookingById(bookingId: string, userId: string) {
+  const { data, error } = await supabase
+    .from('pending_bookings')
+    .select('*')
+    .eq('id', bookingId)
+    .eq('userId', userId)
+    .single()
+
+  if (error) return null
+  return data
+}
+
 // Attachment operations
 export async function createAttachment(attachmentData: {
   bookingId: string

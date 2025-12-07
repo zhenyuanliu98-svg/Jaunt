@@ -50,7 +50,8 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to generate share link')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate share link')
       }
 
       const { shareUrl } = await response.json()
@@ -60,7 +61,8 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
       alert(`Share link copied to clipboard!\n\n${shareUrl}`)
     } catch (error) {
       console.error('Error sharing trip:', error)
-      alert('Failed to generate share link. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate share link'
+      alert(`${errorMessage}\n\nPlease make sure you're signed in and try again.`)
     }
   }
 

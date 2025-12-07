@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import TripSelectionModal from './TripSelectionModal'
 import { CheckCircle, XCircle } from 'lucide-react'
 
 interface PendingBookingsListProps {
@@ -15,6 +16,8 @@ interface PendingBookingsListProps {
 export default function PendingBookingsList({ pendingBookings, trips, isReadOnly = false }: PendingBookingsListProps) {
   const router = useRouter()
   const [processing, setProcessing] = useState<string | null>(null)
+  const [showTripModal, setShowTripModal] = useState(false)
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
 
   if (pendingBookings.length === 0) {
     return (
@@ -28,28 +31,40 @@ export default function PendingBookingsList({ pendingBookings, trips, isReadOnly
 
   const handleApprove = async (bookingId: string) => {
     if (isReadOnly) return
-    if (!confirm('Are you sure you want to approve this booking?')) {
-      return
-    }
+    setSelectedBookingId(bookingId)
+    setShowTripModal(true)
+  }
 
-    setProcessing(bookingId)
+  const handleSelectTrip = async (tripId: string) => {
+    if (!selectedBookingId) return
+
+    setProcessing(selectedBookingId)
     try {
-      const response = await fetch(`/api/bookings/pending/${bookingId}`, {
+      const response = await fetch(`/api/bookings/pending/${selectedBookingId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'REVIEWED' }),
+        body: JSON.stringify({ status: 'REVIEWED', tripId }),
       })
 
       if (!response.ok) {
         throw new Error('Failed to approve booking')
       }
 
+      setShowTripModal(false)
+      setSelectedBookingId(null)
       router.refresh()
     } catch (error) {
       console.error('Error approving booking:', error)
       alert('Failed to approve booking')
     } finally {
       setProcessing(null)
+    }
+  }
+
+  const handleCloseModal = () => {
+    if (!processing) {
+      setShowTripModal(false)
+      setSelectedBookingId(null)
     }
   }
 
@@ -186,6 +201,14 @@ export default function PendingBookingsList({ pendingBookings, trips, isReadOnly
           </Card>
         )
       })}
+
+      <TripSelectionModal
+        isOpen={showTripModal}
+        onClose={handleCloseModal}
+        trips={trips}
+        onSelectTrip={handleSelectTrip}
+        isLoading={processing === selectedBookingId}
+      />
     </div>
   )
 }
