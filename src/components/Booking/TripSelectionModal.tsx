@@ -69,7 +69,7 @@ export default function TripSelectionModal({
 
         {trips.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500 mb-4">You don't have any trips yet.</p>
+            <p className="text-gray-500 mb-4">You don&apos;t have any trips yet.</p>
             <Button onClick={handleCreateNewTrip}>
               <Plus className="h-4 w-4 mr-2" />
               Create Your First Trip
