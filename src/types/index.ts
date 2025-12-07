@@ -70,6 +70,7 @@ export interface BookingFormData {
   confirmationNumber?: string
   notes?: string
   cost?: number
+  city?: string
   typeSpecificData: BookingTypeSpecificData
 }
 

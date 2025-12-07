@@ -1,18 +1,49 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/Card'
+import Button from '@/components/ui/Button'
 import BookingTypeIcon, { getBookingTypeColor, getBookingTypeLabel } from '@/components/BookingTypeIcon'
 import { cn } from '@/lib/utils'
-import { Clock, MapPin, Hash } from 'lucide-react'
+import { Clock, MapPin, Hash, Pencil, Trash2 } from 'lucide-react'
+import Link from 'next/link'
 
 interface BookingCardProps {
   booking: any
   tripId: string
+  isReadOnly?: boolean
 }
 
-export default function BookingCard({ booking, tripId }: BookingCardProps) {
+export default function BookingCard({ booking, tripId, isReadOnly = false }: BookingCardProps) {
+  const router = useRouter()
+  const [isDeleting, setIsDeleting] = useState(false)
   const typeColor = getBookingTypeColor(booking.type)
   const typeLabel = getBookingTypeLabel(booking.type)
+
+  const handleDelete = async () => {
+    if (isReadOnly) return
+    if (!confirm('Are you sure you want to delete this booking? This action cannot be undone.')) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/bookings/${booking.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete booking')
+      }
+
+      router.refresh()
+    } catch (error) {
+      console.error('Error deleting booking:', error)
+      alert('Failed to delete booking. Please try again.')
+      setIsDeleting(false)
+    }
+  }
 
   const renderTypeSpecificInfo = () => {
     const data = booking.typeSpecificData
@@ -86,12 +117,31 @@ export default function BookingCard({ booking, tripId }: BookingCardProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-500">{typeLabel}</span>
-              {booking.time && (
-                <div className="flex items-center text-sm text-gray-600">
-                  <Clock className="h-4 w-4 mr-1" />
-                  {booking.time}
-                </div>
-              )}
+              <div className="flex items-center space-x-2">
+                {booking.time && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Clock className="h-4 w-4 mr-1" />
+                    {booking.time}
+                  </div>
+                )}
+                {!isReadOnly && (
+                  <>
+                    <Link href={`/bookings/${booking.id}/edit?tripId=${tripId}`}>
+                      <Button variant="ghost" size="sm">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
             {renderTypeSpecificInfo()}
             {booking.confirmationNumber && (

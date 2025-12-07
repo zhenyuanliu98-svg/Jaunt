@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   "confirmationNumber" TEXT,
   notes TEXT,
   cost DECIMAL(10, 2),
+  city TEXT,  -- City where the booking takes place
   "typeSpecificData" JSONB,  -- Additional data specific to booking type
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -112,6 +113,7 @@ CREATE INDEX IF NOT EXISTS idx_trips_userId ON trips("userId");
 CREATE INDEX IF NOT EXISTS idx_trips_shareToken ON trips("shareToken");
 CREATE INDEX IF NOT EXISTS idx_bookings_tripId ON bookings("tripId");
 CREATE INDEX IF NOT EXISTS idx_bookings_date ON bookings(date);
+CREATE INDEX IF NOT EXISTS idx_bookings_city ON bookings(city);
 CREATE INDEX IF NOT EXISTS idx_pending_bookings_userId ON pending_bookings("userId");
 CREATE INDEX IF NOT EXISTS idx_attachments_bookingId ON attachments("bookingId");
 
@@ -138,7 +140,21 @@ CREATE TRIGGER update_pending_bookings_updated_at BEFORE UPDATE ON pending_booki
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```
 
-## Step 3: Set Up Row Level Security (RLS)
+## Step 3: Upgrade Existing Database (If Applicable)
+
+If you already have a database set up and need to add the city column to existing bookings:
+
+```sql
+-- Add city column to bookings table
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS city TEXT;
+
+-- Add index for better query performance
+CREATE INDEX IF NOT EXISTS idx_bookings_city ON bookings(city);
+```
+
+You can also find this migration in the `migrations/add_city_column.sql` file.
+
+## Step 4: Set Up Row Level Security (RLS)
 
 Supabase has RLS enabled by default. Since we're using the `service_role` key in the backend, our API routes will have full access. However, if you plan to use Supabase client-side in the future, you should add RLS policies.
 
@@ -183,7 +199,7 @@ CREATE POLICY "Users can delete own trips"
   USING (auth.uid()::text = "userId"::text);
 ```
 
-## Step 4: Verify Setup
+## Step 5: Verify Setup
 
 1. Go to **Table Editor** in Supabase
 2. You should see these tables:
@@ -196,7 +212,7 @@ CREATE POLICY "Users can delete own trips"
 3. Click on the `trips` table
 4. Verify it has a `shareToken` column (type: TEXT)
 
-## Step 5: Test the Share Functionality
+## Step 6: Test the Share Functionality
 
 1. Make sure your environment variables are set correctly
 2. Deploy your app or run it locally

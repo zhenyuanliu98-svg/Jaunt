@@ -171,6 +171,7 @@ export async function createBooking(bookingData: {
   confirmationNumber?: string | null
   notes?: string | null
   cost?: number | null
+  city?: string | null
   typeSpecificData?: any
 }) {
   const { data, error } = await supabase
@@ -181,6 +182,41 @@ export async function createBooking(bookingData: {
 
   if (error) throw error
   return data
+}
+
+export async function findBookingById(bookingId: string) {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('id', bookingId)
+    .single()
+
+  if (error) return null
+  return data
+}
+
+export async function updateBooking(bookingId: string, tripId: string, updates: any) {
+  const { data, error } = await supabase
+    .from('bookings')
+    .update(updates)
+    .eq('id', bookingId)
+    .eq('tripId', tripId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteBooking(bookingId: string, tripId: string) {
+  const { error } = await supabase
+    .from('bookings')
+    .delete()
+    .eq('id', bookingId)
+    .eq('tripId', tripId)
+
+  if (error) throw error
+  return true
 }
 
 // Pending booking operations
