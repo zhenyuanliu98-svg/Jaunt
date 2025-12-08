@@ -61,6 +61,34 @@ EMAIL_DOMAIN=jaunt.app
 
 ---
 
+## 🗺️ Optional Variables (For Google Maps Feature)
+
+### Google Maps API
+```
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyXXXXXXXXXXXXXXXXXX
+```
+- Get from [Google Cloud Console](https://console.cloud.google.com)
+- Required for displaying location maps on booking cards
+- Enable "Maps JavaScript API" and "Geocoding API"
+- Can skip for MVP and add later
+
+**How to set up:**
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Select your project (or use the same one as Google OAuth)
+3. APIs & Services → Library
+4. Search for and enable:
+   - "Maps JavaScript API"
+   - "Geocoding API"
+5. APIs & Services → Credentials
+6. Create API Key
+7. (Recommended) Restrict the key:
+   - Application restrictions: HTTP referrers (websites)
+   - Add your website URL (e.g., `https://your-app.vercel.app/*`)
+   - API restrictions: Restrict key to Maps JavaScript API and Geocoding API
+8. Copy the API key and add to Vercel environment variables
+
+---
+
 ## 🍎 Optional Variables (For Apple Sign In)
 
 ```
