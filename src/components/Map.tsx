@@ -1,11 +1,35 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Loader } from '@googlemaps/js-api-loader'
 
 interface MapProps {
   location: string
   className?: string
+}
+
+// Declare google maps types
+declare global {
+  interface Window {
+    google: any
+  }
+}
+
+// Script loading utility
+function loadGoogleMapsScript(apiKey: string): Promise<void> {
+  // Check if already loaded
+  if (typeof window !== 'undefined' && window.google?.maps) {
+    return Promise.resolve()
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
+    script.async = true
+    script.defer = true
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error('Failed to load Google Maps script'))
+    document.head.appendChild(script)
+  })
 }
 
 export default function Map({ location, className = '' }: MapProps) {
@@ -25,15 +49,8 @@ export default function Map({ location, className = '' }: MapProps) {
       }
 
       try {
-        // Load Google Maps API
-        const loader = new Loader({
-          apiKey,
-          version: 'weekly',
-        })
-
-        // Use the load method which returns the google object
-        const loadPromise = (loader as any).load()
-        await loadPromise
+        // Load Google Maps script
+        await loadGoogleMapsScript(apiKey)
 
         // Now window.google is available
         const geocoder = new window.google.maps.Geocoder()
