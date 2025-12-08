@@ -8,6 +8,8 @@ import BookingTypeIcon, { getBookingTypeColor, getBookingTypeLabel } from '@/com
 import { cn } from '@/lib/utils'
 import { Clock, MapPin, Hash, Pencil, Trash2 } from 'lucide-react'
 import Link from 'next/link'
+import Map from '@/components/Map'
+import { getBookingLocation } from '@/lib/bookingUtils'
 
 interface BookingCardProps {
   booking: any
@@ -107,53 +109,62 @@ export default function BookingCard({ booking, tripId, isReadOnly = false }: Boo
     }
   }
 
+  const location = getBookingLocation(booking)
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-6">
-        <div className="flex items-start space-x-4">
-          <div className={cn('p-3 rounded-lg', typeColor)}>
-            <BookingTypeIcon type={booking.type} className="h-6 w-6" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-500">{typeLabel}</span>
-              <div className="flex items-center space-x-2">
-                {booking.time && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {booking.time}
-                  </div>
-                )}
-                {!isReadOnly && (
-                  <>
-                    <Link href={`/bookings/${booking.id}/edit?tripId=${tripId}`}>
-                      <Button variant="ghost" size="sm">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleDelete}
-                      disabled={isDeleting}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
-              </div>
+        <div className="flex items-start gap-6">
+          <div className="flex items-start space-x-4 flex-1 min-w-0">
+            <div className={cn('p-3 rounded-lg', typeColor)}>
+              <BookingTypeIcon type={booking.type} className="h-6 w-6" />
             </div>
-            {renderTypeSpecificInfo()}
-            {booking.confirmationNumber && (
-              <div className="flex items-center mt-2 text-sm text-gray-500">
-                <Hash className="h-4 w-4 mr-1" />
-                {booking.confirmationNumber}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-500">{typeLabel}</span>
+                <div className="flex items-center space-x-2">
+                  {booking.time && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Clock className="h-4 w-4 mr-1" />
+                      {booking.time}
+                    </div>
+                  )}
+                  {!isReadOnly && (
+                    <>
+                      <Link href={`/bookings/${booking.id}/edit?tripId=${tripId}`}>
+                        <Button variant="ghost" size="sm">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
-            )}
-            {booking.notes && (
-              <p className="mt-2 text-sm text-gray-600">{booking.notes}</p>
-            )}
+              {renderTypeSpecificInfo()}
+              {booking.confirmationNumber && (
+                <div className="flex items-center mt-2 text-sm text-gray-500">
+                  <Hash className="h-4 w-4 mr-1" />
+                  {booking.confirmationNumber}
+                </div>
+              )}
+              {booking.notes && (
+                <p className="mt-2 text-sm text-gray-600">{booking.notes}</p>
+              )}
+            </div>
           </div>
+          {location && (
+            <div className="w-80 h-64 flex-shrink-0">
+              <Map location={location} className="w-full h-full" />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
