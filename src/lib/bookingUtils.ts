@@ -2,6 +2,7 @@ import { BookingType } from '@/types/enums'
 
 /**
  * Extracts a displayable location string from booking data for mapping
+ * Combines names with addresses for better geocoding accuracy
  * Returns null if no location data is available
  */
 export function getBookingLocation(booking: any): string | null {
@@ -14,17 +15,29 @@ export function getBookingLocation(booking: any): string | null {
       return data.departureAirport || null
 
     case BookingType.ACCOMMODATION:
-      return data.address || null
+      // Combine property name with address for better geocoding
+      if (data.propertyName && data.address) {
+        return `${data.propertyName}, ${data.address}`
+      }
+      return data.address || data.propertyName || null
 
     case BookingType.CAR_RENTAL:
       // For car rentals, show pickup location
       return data.pickupLocation || null
 
     case BookingType.RESTAURANT:
-      return data.address || null
+      // Combine restaurant name with address for better geocoding
+      if (data.name && data.address) {
+        return `${data.name}, ${data.address}`
+      }
+      return data.address || data.name || null
 
     case BookingType.ACTIVITY:
-      return data.location || null
+      // Combine activity name with location if both available
+      if (data.name && data.location) {
+        return `${data.name}, ${data.location}`
+      }
+      return data.location || data.name || null
 
     case BookingType.TRANSPORT:
       // For transport, show departure station as it's the starting location
