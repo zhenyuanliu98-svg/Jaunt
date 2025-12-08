@@ -114,7 +114,7 @@ export default function BookingCard({ booking, tripId, isReadOnly = false }: Boo
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-6">
-        <div className="flex items-start gap-6">
+        <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
           <div className="flex items-start space-x-4 flex-1 min-w-0">
             <div className={cn('p-3 rounded-lg', typeColor)}>
               <BookingTypeIcon type={booking.type} className="h-6 w-6" />
@@ -161,7 +161,7 @@ export default function BookingCard({ booking, tripId, isReadOnly = false }: Boo
             </div>
           </div>
           {location && (
-            <div className="w-80 h-64 flex-shrink-0">
+            <div className="w-full md:w-80 h-48 md:h-64 md:flex-shrink-0">
               <Map location={location} className="w-full h-full" />
             </div>
           )}
