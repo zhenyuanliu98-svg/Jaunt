@@ -53,10 +53,48 @@ export default function Map({ location, className = '' }: MapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isVisible, setIsVisible] = useState(false)
   const mapInstanceRef = useRef<any>(null)
   const markerInstanceRef = useRef<any>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
 
+  // Intersection Observer to detect when map is visible
   useEffect(() => {
+    if (!mapRef.current) return
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true)
+            // Once visible, disconnect the observer
+            if (observerRef.current) {
+              observerRef.current.disconnect()
+            }
+          }
+        })
+      },
+      {
+        rootMargin: '100px', // Start loading 100px before the map is visible
+        threshold: 0.1,
+      }
+    )
+
+    if (mapRef.current) {
+      observerRef.current.observe(mapRef.current)
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+    }
+  }, [])
+
+  // Only initialize map when it becomes visible
+  useEffect(() => {
+    if (!isVisible) return
+
     let isMounted = true
 
     const initMap = async () => {
@@ -140,7 +178,7 @@ export default function Map({ location, className = '' }: MapProps) {
       }
       mapInstanceRef.current = null
     }
-  }, [location])
+  }, [location, isVisible])
 
   if (error) {
     return (

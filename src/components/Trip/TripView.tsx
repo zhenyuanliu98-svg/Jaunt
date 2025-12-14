@@ -12,8 +12,10 @@ import { DaySlotType, MealType } from '@/types/enums'
 import BookingCard from '@/components/Booking/BookingCard'
 import DraggableBookingCard from '@/components/Booking/DraggableBookingCard'
 import MealSlot from '@/components/Trip/MealSlot'
+import ActivitySlot, { TimeOfDay } from '@/components/Trip/ActivitySlot'
 import Map from '@/components/Map'
 import { getBookingTypeLabel } from '@/components/BookingTypeIcon'
+import { addDays, eachDayOfInterval } from 'date-fns'
 
 interface TripViewProps {
   trip: any
@@ -93,19 +95,42 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
 
     if (!slotData) return
 
-    const { slotType } = slotData
+    const { slotType, timeOfDay, date } = slotData
 
     // Prepare update data
-    let mealType: MealType | null = null
-    if (slotType === DaySlotType.BREAKFAST) mealType = MealType.BREAKFAST
-    if (slotType === DaySlotType.LUNCH) mealType = MealType.LUNCH
-    if (slotType === DaySlotType.DINNER) mealType = MealType.DINNER
+    let updateData: any = {}
+
+    // Handle meal slot drops
+    if (slotType) {
+      let mealType: MealType | null = null
+      if (slotType === DaySlotType.BREAKFAST) mealType = MealType.BREAKFAST
+      if (slotType === DaySlotType.LUNCH) mealType = MealType.LUNCH
+      if (slotType === DaySlotType.DINNER) mealType = MealType.DINNER
+      updateData.mealType = mealType
+    }
+
+    // Handle time-of-day slot drops
+    if (timeOfDay) {
+      // Set appropriate time based on time of day
+      let time = '09:00' // default
+      if (timeOfDay === TimeOfDay.MORNING) time = '09:00'
+      if (timeOfDay === TimeOfDay.AFTERNOON) time = '14:00'
+      if (timeOfDay === TimeOfDay.EVENING) time = '19:00'
+
+      updateData.time = time
+      updateData.mealType = null // Clear meal type when moving to activity slot
+    }
+
+    // Update the booking date if dropped on a different day
+    if (date) {
+      updateData.date = date
+    }
 
     try {
       const response = await fetch(`/api/bookings/${bookingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mealType }),
+        body: JSON.stringify(updateData),
       })
 
       if (!response.ok) {
@@ -119,11 +144,36 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
     }
   }
 
+  // Generate all days in the trip range
+  const allDays = eachDayOfInterval({
+    start: new Date(trip.startDate),
+    end: new Date(trip.endDate),
+  })
+
+  // Initialize bookingsByDate with all trip days
+  const bookingsByDate: any = {}
+  allDays.forEach((day) => {
+    const dateKey = format(day, 'yyyy-MM-dd')
+    bookingsByDate[dateKey] = {
+      accommodation: null,
+      breakfast: null,
+      lunch: null,
+      dinner: null,
+      morning: [],
+      afternoon: [],
+      evening: [],
+      allDay: [],
+      transport: [],
+    }
+  })
+
   // Group bookings by date
-  const bookingsByDate = trip.bookings.reduce((acc: any, booking: any) => {
+  trip.bookings.forEach((booking: any) => {
     const dateKey = format(booking.date, 'yyyy-MM-dd')
-    if (!acc[dateKey]) {
-      acc[dateKey] = {
+
+    // Ensure the date exists in our map
+    if (!bookingsByDate[dateKey]) {
+      bookingsByDate[dateKey] = {
         accommodation: null,
         breakfast: null,
         lunch: null,
@@ -138,49 +188,61 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
 
     // All-day activities
     if (booking.isAllDay) {
-      acc[dateKey].allDay.push(booking)
-      return acc
+      bookingsByDate[dateKey].allDay.push(booking)
+      return
     }
 
-    // Accommodation
+    // Accommodation - span across all days
     if (booking.type === 'ACCOMMODATION') {
-      acc[dateKey].accommodation = booking
-      return acc
+      const checkInDate = new Date(booking.date)
+      const checkOutDate = booking.endDate ? new Date(booking.endDate) : checkInDate
+
+      // Show accommodation on all days from check-in to check-out (inclusive)
+      const accommodationDays = eachDayOfInterval({
+        start: checkInDate,
+        end: checkOutDate,
+      })
+
+      accommodationDays.forEach((day) => {
+        const dayKey = format(day, 'yyyy-MM-dd')
+        if (bookingsByDate[dayKey]) {
+          bookingsByDate[dayKey].accommodation = booking
+        }
+      })
+      return
     }
 
     // Transport & Flights
     if (booking.type === 'FLIGHT' || booking.type === 'TRANSPORT') {
-      acc[dateKey].transport.push(booking)
-      return acc
+      bookingsByDate[dateKey].transport.push(booking)
+      return
     }
 
     // Meals
     if (booking.mealType === MealType.BREAKFAST) {
-      acc[dateKey].breakfast = booking
+      bookingsByDate[dateKey].breakfast = booking
     } else if (booking.mealType === MealType.LUNCH) {
-      acc[dateKey].lunch = booking
+      bookingsByDate[dateKey].lunch = booking
     } else if (booking.mealType === MealType.DINNER) {
-      acc[dateKey].dinner = booking
+      bookingsByDate[dateKey].dinner = booking
     } else {
       // Time-based grouping for activities
       const time = booking.time
       if (time) {
         const hour = parseInt(time.split(':')[0])
         if (hour >= 5 && hour < 12) {
-          acc[dateKey].morning.push(booking)
+          bookingsByDate[dateKey].morning.push(booking)
         } else if (hour >= 12 && hour < 17) {
-          acc[dateKey].afternoon.push(booking)
+          bookingsByDate[dateKey].afternoon.push(booking)
         } else {
-          acc[dateKey].evening.push(booking)
+          bookingsByDate[dateKey].evening.push(booking)
         }
       } else {
         // No time specified - add to morning by default
-        acc[dateKey].morning.push(booking)
+        bookingsByDate[dateKey].morning.push(booking)
       }
     }
-
-    return acc
-  }, {})
+  })
 
   const sortedDates = Object.keys(bookingsByDate).sort()
 
@@ -246,18 +308,6 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
             </div>
           </CardHeader>
         </Card>
-
-        {/* Google Maps Integration */}
-        {trip.destination && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Destination</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Map location={trip.destination} className="h-64 w-full" />
-            </CardContent>
-          </Card>
-        )}
 
         {/* Add Booking Button */}
         <div className="flex justify-end">
@@ -370,15 +420,13 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
                       )}
 
                       {/* Morning */}
-                      {dateData.morning.length > 0 && (
-                        <TimeSection
-                          icon={Sun}
-                          title="Morning"
-                          bookings={dateData.morning}
-                          tripId={trip.id}
-                          isReadOnly={isReadOnly}
-                        />
-                      )}
+                      <ActivitySlot
+                        timeOfDay={TimeOfDay.MORNING}
+                        date={dateKey}
+                        bookings={dateData.morning}
+                        tripId={trip.id}
+                        readOnly={isReadOnly}
+                      />
 
                       {/* Breakfast */}
                       <MealSlot
@@ -399,15 +447,13 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
                       />
 
                       {/* Afternoon */}
-                      {dateData.afternoon.length > 0 && (
-                        <TimeSection
-                          icon={Sunset}
-                          title="Afternoon"
-                          bookings={dateData.afternoon}
-                          tripId={trip.id}
-                          isReadOnly={isReadOnly}
-                        />
-                      )}
+                      <ActivitySlot
+                        timeOfDay={TimeOfDay.AFTERNOON}
+                        date={dateKey}
+                        bookings={dateData.afternoon}
+                        tripId={trip.id}
+                        readOnly={isReadOnly}
+                      />
 
                       {/* Dinner */}
                       <MealSlot
@@ -419,15 +465,13 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
                       />
 
                       {/* Evening */}
-                      {dateData.evening.length > 0 && (
-                        <TimeSection
-                          icon={Moon}
-                          title="Evening"
-                          bookings={dateData.evening}
-                          tripId={trip.id}
-                          isReadOnly={isReadOnly}
-                        />
-                      )}
+                      <ActivitySlot
+                        timeOfDay={TimeOfDay.EVENING}
+                        date={dateKey}
+                        bookings={dateData.evening}
+                        tripId={trip.id}
+                        readOnly={isReadOnly}
+                      />
                     </div>
                   )}
                 </div>
@@ -590,31 +634,3 @@ function AllDayActivityCard({ booking, tripId, isReadOnly }: any) {
   )
 }
 
-// Time Section Component
-function TimeSection({ icon: Icon, title, bookings, tripId, isReadOnly }: any) {
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Icon className="h-5 w-5 text-gray-600" />
-        <h4 className="text-base font-semibold text-gray-900">{title}</h4>
-      </div>
-      <div className="space-y-2">
-        {bookings.map((booking: any) => (
-          <ActivityCard key={booking.id} booking={booking} tripId={tripId} isReadOnly={isReadOnly} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// Activity Card Component
-function ActivityCard({ booking, tripId, isReadOnly }: any) {
-  // Wrap with DraggableBookingCard for drag and drop functionality
-  return (
-    <DraggableBookingCard
-      booking={booking}
-      tripId={tripId}
-      readOnly={isReadOnly}
-    />
-  )
-}
