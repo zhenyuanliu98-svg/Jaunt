@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
-import { BookingType } from '@/types/enums'
+import { BookingType, MealType } from '@/types/enums'
+import { autoDetectMealType } from '@/lib/mealTypeUtils'
 
 export default function NewBookingPage() {
   const router = useRouter()
@@ -21,6 +22,7 @@ export default function NewBookingPage() {
     notes: '',
     cost: '',
     city: '',
+    mealType: '' as MealType | '',
     // Type-specific fields
     airline: '',
     flightNumber: '',
@@ -40,6 +42,16 @@ export default function NewBookingPage() {
     arrivalStation: '',
   })
   const [loading, setLoading] = useState(false)
+
+  // Auto-detect meal type for restaurants
+  useEffect(() => {
+    if (formData.type === 'RESTAURANT') {
+      const detectedMealType = autoDetectMealType(formData.time, formData.name)
+      if (detectedMealType && !formData.mealType) {
+        setFormData(prev => ({ ...prev, mealType: detectedMealType }))
+      }
+    }
+  }, [formData.time, formData.name, formData.type])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -104,6 +116,7 @@ export default function NewBookingPage() {
         notes: formData.notes || undefined,
         cost: formData.cost ? parseFloat(formData.cost) : undefined,
         city: formData.city || undefined,
+        mealType: formData.mealType || undefined,
         typeSpecificData,
       }
 
@@ -241,6 +254,21 @@ export default function NewBookingPage() {
               onChange={(e) => setFormData({ ...formData, partySize: e.target.value })}
               placeholder="2"
             />
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Meal Type <span className="text-gray-400 text-xs">(auto-detected)</span>
+              </label>
+              <select
+                value={formData.mealType}
+                onChange={(e) => setFormData({ ...formData, mealType: e.target.value as MealType | '' })}
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">None</option>
+                <option value={MealType.BREAKFAST}>Breakfast</option>
+                <option value={MealType.LUNCH}>Lunch</option>
+                <option value={MealType.DINNER}>Dinner</option>
+              </select>
+            </div>
           </>
         )
       case 'ACTIVITY':

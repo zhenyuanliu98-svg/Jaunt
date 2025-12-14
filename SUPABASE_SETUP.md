@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   notes TEXT,
   cost DECIMAL(10, 2),
   city TEXT,  -- City where the booking takes place
+  "mealType" TEXT,  -- BREAKFAST, LUNCH, DINNER (for RESTAURANT bookings)
   "typeSpecificData" JSONB,  -- Additional data specific to booking type
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()

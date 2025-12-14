@@ -1,4 +1,4 @@
-import { BookingType } from './enums'
+import { BookingType, MealType } from './enums'
 
 // Flight specific data
 export interface FlightData {
@@ -71,6 +71,7 @@ export interface BookingFormData {
   notes?: string
   cost?: number
   city?: string
+  mealType?: MealType
   typeSpecificData: BookingTypeSpecificData
 }
 

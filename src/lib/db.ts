@@ -172,6 +172,7 @@ export async function createBooking(bookingData: {
   notes?: string | null
   cost?: number | null
   city?: string | null
+  mealType?: string | null
   typeSpecificData?: any
 }) {
   const { data, error } = await supabase
