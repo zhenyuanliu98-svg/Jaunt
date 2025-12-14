@@ -12,3 +12,16 @@ export enum PendingBookingStatus {
   REVIEWED = 'REVIEWED',
   REJECTED = 'REJECTED'
 }
+
+export enum MealType {
+  BREAKFAST = 'BREAKFAST',
+  LUNCH = 'LUNCH',
+  DINNER = 'DINNER'
+}
+
+export enum DaySlotType {
+  BREAKFAST = 'BREAKFAST',
+  LUNCH = 'LUNCH',
+  DINNER = 'DINNER',
+  ACCOMMODATION = 'ACCOMMODATION'
+}
