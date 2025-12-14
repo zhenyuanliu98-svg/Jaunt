@@ -3,7 +3,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import { DaySlotType } from '@/types/enums'
 import { Coffee, UtensilsCrossed, Moon, Home } from 'lucide-react'
-import BookingCard from '@/components/Booking/BookingCard'
+import DraggableBookingCard from '@/components/Booking/DraggableBookingCard'
 
 interface MealSlotProps {
   slotType: DaySlotType
@@ -84,10 +84,10 @@ export default function MealSlot({
 
       {booking ? (
         <div className="bg-white rounded-md">
-          <BookingCard
+          <DraggableBookingCard
             booking={booking}
             tripId={tripId || ''}
-            isReadOnly={readOnly}
+            readOnly={readOnly}
           />
         </div>
       ) : (

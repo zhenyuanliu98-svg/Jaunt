@@ -11,6 +11,8 @@ import { DndContext, DragEndEvent, DragOverlay } from '@dnd-kit/core'
 import { DaySlotType, MealType } from '@/types/enums'
 import BookingCard from '@/components/Booking/BookingCard'
 import DraggableBookingCard from '@/components/Booking/DraggableBookingCard'
+import MealSlot from '@/components/Trip/MealSlot'
+import Map from '@/components/Map'
 import { getBookingTypeLabel } from '@/components/BookingTypeIcon'
 
 interface TripViewProps {
@@ -245,6 +247,18 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
           </CardHeader>
         </Card>
 
+        {/* Google Maps Integration */}
+        {trip.destination && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Destination</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Map location={trip.destination} className="h-64 w-full" />
+            </CardContent>
+          </Card>
+        )}
+
         {/* Add Booking Button */}
         <div className="flex justify-end">
           {isReadOnly ? (
@@ -367,30 +381,22 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
                       )}
 
                       {/* Breakfast */}
-                      {dateData.breakfast && (
-                        <MealSection
-                          icon={Coffee}
-                          title="Breakfast"
-                          booking={dateData.breakfast}
-                          tripId={trip.id}
-                          isReadOnly={isReadOnly}
-                          slotType={DaySlotType.BREAKFAST}
-                          date={dateKey}
-                        />
-                      )}
+                      <MealSlot
+                        slotType={DaySlotType.BREAKFAST}
+                        date={dateKey}
+                        booking={dateData.breakfast}
+                        tripId={trip.id}
+                        readOnly={isReadOnly}
+                      />
 
                       {/* Lunch */}
-                      {dateData.lunch && (
-                        <MealSection
-                          icon={UtensilsCrossed}
-                          title="Lunch"
-                          booking={dateData.lunch}
-                          tripId={trip.id}
-                          isReadOnly={isReadOnly}
-                          slotType={DaySlotType.LUNCH}
-                          date={dateKey}
-                        />
-                      )}
+                      <MealSlot
+                        slotType={DaySlotType.LUNCH}
+                        date={dateKey}
+                        booking={dateData.lunch}
+                        tripId={trip.id}
+                        readOnly={isReadOnly}
+                      />
 
                       {/* Afternoon */}
                       {dateData.afternoon.length > 0 && (
@@ -404,17 +410,13 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
                       )}
 
                       {/* Dinner */}
-                      {dateData.dinner && (
-                        <MealSection
-                          icon={Moon}
-                          title="Dinner"
-                          booking={dateData.dinner}
-                          tripId={trip.id}
-                          isReadOnly={isReadOnly}
-                          slotType={DaySlotType.DINNER}
-                          date={dateKey}
-                        />
-                      )}
+                      <MealSlot
+                        slotType={DaySlotType.DINNER}
+                        date={dateKey}
+                        booking={dateData.dinner}
+                        tripId={trip.id}
+                        readOnly={isReadOnly}
+                      />
 
                       {/* Evening */}
                       {dateData.evening.length > 0 && (
@@ -605,89 +607,14 @@ function TimeSection({ icon: Icon, title, bookings, tripId, isReadOnly }: any) {
   )
 }
 
-// Meal Section Component
-function MealSection({ icon: Icon, title, booking, tripId, isReadOnly, slotType, date }: any) {
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Icon className="h-5 w-5 text-orange-600" />
-        <h4 className="text-base font-semibold text-gray-900">{title}</h4>
-      </div>
-      <MealCard booking={booking} tripId={tripId} isReadOnly={isReadOnly} />
-    </div>
-  )
-}
-
 // Activity Card Component
 function ActivityCard({ booking, tripId, isReadOnly }: any) {
-  const data = booking.typeSpecificData || {}
+  // Wrap with DraggableBookingCard for drag and drop functionality
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-purple-100 rounded-lg">
-            <svg className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-gray-900">{data.name || getBookingTypeLabel(booking.type)}</h3>
-              {booking.time && (
-                <div className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap">
-                  <Clock className="h-3 w-3" />
-                  {booking.time}
-                </div>
-              )}
-            </div>
-            {data.location && (
-              <div className="flex items-center gap-1 mt-1 text-sm text-gray-600">
-                <MapPin className="h-3 w-3" />
-                <span className="truncate">{data.location}</span>
-              </div>
-            )}
-            {data.description && (
-              <p className="text-sm text-gray-600 mt-1 line-clamp-2">{data.description}</p>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-// Meal Card Component
-function MealCard({ booking, tripId, isReadOnly }: any) {
-  const data = booking.typeSpecificData || {}
-  return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-orange-100 rounded-lg">
-            <UtensilsCrossed className="h-5 w-5 text-orange-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-gray-900">{data.name || 'Restaurant'}</h3>
-              {booking.time && (
-                <div className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap">
-                  <Clock className="h-3 w-3" />
-                  {booking.time}
-                </div>
-              )}
-            </div>
-            {data.address && (
-              <div className="flex items-center gap-1 mt-1 text-sm text-gray-600">
-                <MapPin className="h-3 w-3" />
-                <span className="truncate">{data.address}</span>
-              </div>
-            )}
-            {data.partySize && (
-              <p className="text-sm text-gray-600 mt-1">Party size: {data.partySize}</p>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <DraggableBookingCard
+      booking={booking}
+      tripId={tripId}
+      readOnly={isReadOnly}
+    />
   )
 }
