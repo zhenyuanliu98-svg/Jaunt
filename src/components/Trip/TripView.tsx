@@ -4,25 +4,26 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
-import { Plus, Share2, Pencil, Trash2, Calendar, MapPin } from 'lucide-react'
+import { Plus, Share2, Pencil, Trash2, Calendar, MapPin, Clock, Hash, Home as HomeIcon, Sun, Coffee, UtensilsCrossed, Moon, Sunset } from 'lucide-react'
 import Link from 'next/link'
-import BookingCard from '@/components/Booking/BookingCard'
-import DraggableBookingCard from '@/components/Booking/DraggableBookingCard'
-import MealSlot from './MealSlot'
 import { format } from 'date-fns'
 import { DndContext, DragEndEvent, DragOverlay } from '@dnd-kit/core'
 import { DaySlotType, MealType } from '@/types/enums'
+import BookingCard from '@/components/Booking/BookingCard'
+import DraggableBookingCard from '@/components/Booking/DraggableBookingCard'
+import { getBookingTypeLabel } from '@/components/BookingTypeIcon'
 
 interface TripViewProps {
   trip: any
   isReadOnly?: boolean
 }
 
+type ViewMode = 'regular' | 'allDay'
+
 export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
-  const [editingCity, setEditingCity] = useState<{ [key: string]: boolean }>({})
-  const [cityInputs, setCityInputs] = useState<{ [key: string]: string }>({})
+  const [viewMode, setViewMode] = useState<ViewMode>('regular')
   const [activeId, setActiveId] = useState<string | null>(null)
 
   const handleDelete = async () => {
@@ -49,48 +50,6 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
     }
   }
 
-  const handleCityEdit = (dateKey: string, dateData: any) => {
-    const cities = getCitiesForDate(dateData)
-    setCityInputs({ ...cityInputs, [dateKey]: cities.join(' / ') })
-    setEditingCity({ ...editingCity, [dateKey]: true })
-  }
-
-  const handleCitySave = async (dateKey: string, dateData: any) => {
-    const newCities = cityInputs[dateKey]?.split('/').map(c => c.trim()).filter(c => c) || []
-
-    const allBookings = [
-      dateData[DaySlotType.BREAKFAST],
-      dateData[DaySlotType.LUNCH],
-      dateData[DaySlotType.DINNER],
-      dateData[DaySlotType.ACCOMMODATION],
-      ...dateData.unassigned,
-    ].filter(Boolean)
-
-    try {
-      // Update all bookings for this date
-      const updatePromises = allBookings.map((booking: any, index: number) => {
-        const city = newCities[index] || newCities[0] || ''
-        return fetch(`/api/bookings/${booking.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ city }),
-        })
-      })
-
-      await Promise.all(updatePromises)
-      setEditingCity({ ...editingCity, [dateKey]: false })
-      router.refresh()
-    } catch (error) {
-      console.error('Error updating cities:', error)
-      alert('Failed to update cities. Please try again.')
-    }
-  }
-
-  const handleCityCancel = (dateKey: string) => {
-    setEditingCity({ ...editingCity, [dateKey]: false })
-    setCityInputs({ ...cityInputs, [dateKey]: '' })
-  }
-
   const handleShare = async () => {
     if (isReadOnly) return
     try {
@@ -105,15 +64,11 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
 
       const { shareUrl } = await response.json()
 
-      // Try to copy to clipboard with fallback
       try {
         await navigator.clipboard.writeText(shareUrl)
         alert(`Share link copied to clipboard!\n\n${shareUrl}`)
       } catch (clipboardError) {
-        // Clipboard API failed - show URL for manual copy
         const message = `Share link (select and copy):\n\n${shareUrl}\n\nNote: Clipboard access was denied. Please copy the link manually.`
-
-        // Use a prompt as a workaround - it allows text selection
         if (window.prompt(message, shareUrl)) {
           // User clicked OK after copying
         }
@@ -162,51 +117,70 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
     }
   }
 
-  // Group bookings by date and slot
+  // Group bookings by date
   const bookingsByDate = trip.bookings.reduce((acc: any, booking: any) => {
     const dateKey = format(booking.date, 'yyyy-MM-dd')
     if (!acc[dateKey]) {
       acc[dateKey] = {
-        [DaySlotType.BREAKFAST]: null,
-        [DaySlotType.LUNCH]: null,
-        [DaySlotType.DINNER]: null,
-        [DaySlotType.ACCOMMODATION]: null,
-        unassigned: [],
+        accommodation: null,
+        breakfast: null,
+        lunch: null,
+        dinner: null,
+        morning: [],
+        afternoon: [],
+        evening: [],
+        allDay: [],
+        transport: [],
       }
     }
 
-    // Assign booking to slot based on mealType or type
+    // All-day activities
+    if (booking.isAllDay) {
+      acc[dateKey].allDay.push(booking)
+      return acc
+    }
+
+    // Accommodation
+    if (booking.type === 'ACCOMMODATION') {
+      acc[dateKey].accommodation = booking
+      return acc
+    }
+
+    // Transport & Flights
+    if (booking.type === 'FLIGHT' || booking.type === 'TRANSPORT') {
+      acc[dateKey].transport.push(booking)
+      return acc
+    }
+
+    // Meals
     if (booking.mealType === MealType.BREAKFAST) {
-      acc[dateKey][DaySlotType.BREAKFAST] = booking
+      acc[dateKey].breakfast = booking
     } else if (booking.mealType === MealType.LUNCH) {
-      acc[dateKey][DaySlotType.LUNCH] = booking
+      acc[dateKey].lunch = booking
     } else if (booking.mealType === MealType.DINNER) {
-      acc[dateKey][DaySlotType.DINNER] = booking
-    } else if (booking.type === 'ACCOMMODATION') {
-      acc[dateKey][DaySlotType.ACCOMMODATION] = booking
+      acc[dateKey].dinner = booking
     } else {
-      acc[dateKey].unassigned.push(booking)
+      // Time-based grouping for activities
+      const time = booking.time
+      if (time) {
+        const hour = parseInt(time.split(':')[0])
+        if (hour >= 5 && hour < 12) {
+          acc[dateKey].morning.push(booking)
+        } else if (hour >= 12 && hour < 17) {
+          acc[dateKey].afternoon.push(booking)
+        } else {
+          acc[dateKey].evening.push(booking)
+        }
+      } else {
+        // No time specified - add to morning by default
+        acc[dateKey].morning.push(booking)
+      }
     }
 
     return acc
   }, {})
 
   const sortedDates = Object.keys(bookingsByDate).sort()
-
-  const getCitiesForDate = (dateData: any) => {
-    const allBookings = [
-      dateData[DaySlotType.BREAKFAST],
-      dateData[DaySlotType.LUNCH],
-      dateData[DaySlotType.DINNER],
-      dateData[DaySlotType.ACCOMMODATION],
-      ...dateData.unassigned,
-    ].filter(Boolean)
-
-    const cities = allBookings
-      .map((b: any) => b.city)
-      .filter((city: string, index: number, self: string[]) => city && self.indexOf(city) === index)
-    return cities
-  }
 
   const activeBooking = activeId
     ? trip.bookings.find((b: any) => b.id === activeId)
@@ -300,112 +274,158 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
           </Card>
         ) : (
           <div className="space-y-8">
-            {sortedDates.map((dateKey) => {
+            {sortedDates.map((dateKey, dayIndex) => {
               const dateData = bookingsByDate[dateKey]
-              const cities = getCitiesForDate(dateData)
-              const isEditing = editingCity[dateKey]
+              const hasAllDayActivities = dateData.allDay.length > 0
 
               return (
-                <div key={dateKey}>
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {format(new Date(dateKey), 'EEEE, MMMM dd, yyyy')}
-                    </h3>
-                    {cities.length > 0 && (
-                      <div className="flex items-center mt-2">
-                        <MapPin className="h-4 w-4 text-gray-500 mr-2" />
-                        {isEditing ? (
-                          <div className="flex items-center gap-2 flex-1">
-                            <input
-                              type="text"
-                              value={cityInputs[dateKey] || ''}
-                              onChange={(e) => setCityInputs({ ...cityInputs, [dateKey]: e.target.value })}
-                              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                              placeholder="City 1 / City 2 / ..."
-                            />
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleCitySave(dateKey, dateData)}
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleCityCancel(dateKey)}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-600">
-                              {cities.join(' / ')}
-                            </span>
-                            {!isReadOnly && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleCityEdit(dateKey, dateData)}
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        )}
+                <div key={dateKey} className="space-y-4">
+                  {/* Date Header with Toggle */}
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">
+                        Day {dayIndex + 1}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {format(new Date(dateKey), 'EEEE, MMMM dd')}
+                      </p>
+                    </div>
+                    {hasAllDayActivities && (
+                      <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => setViewMode('regular')}
+                          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            viewMode === 'regular'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          Regular Schedule
+                        </button>
+                        <button
+                          onClick={() => setViewMode('allDay')}
+                          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            viewMode === 'allDay'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          All Day Activity
+                        </button>
                       </div>
                     )}
                   </div>
 
-                  {/* Meal and Accommodation Slots */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <MealSlot
-                      slotType={DaySlotType.BREAKFAST}
-                      date={dateKey}
-                      booking={dateData[DaySlotType.BREAKFAST]}
-                      tripId={trip.id}
-                      readOnly={isReadOnly}
-                    />
-                    <MealSlot
-                      slotType={DaySlotType.LUNCH}
-                      date={dateKey}
-                      booking={dateData[DaySlotType.LUNCH]}
-                      tripId={trip.id}
-                      readOnly={isReadOnly}
-                    />
-                    <MealSlot
-                      slotType={DaySlotType.DINNER}
-                      date={dateKey}
-                      booking={dateData[DaySlotType.DINNER]}
-                      tripId={trip.id}
-                      readOnly={isReadOnly}
-                    />
-                    <MealSlot
-                      slotType={DaySlotType.ACCOMMODATION}
-                      date={dateKey}
-                      booking={dateData[DaySlotType.ACCOMMODATION]}
-                      tripId={trip.id}
-                      readOnly={isReadOnly}
-                    />
-                  </div>
+                  {/* All Day Activity View */}
+                  {viewMode === 'allDay' && hasAllDayActivities && (
+                    <div className="space-y-4">
+                      {/* Accommodation */}
+                      {dateData.accommodation && (
+                        <AccommodationCard booking={dateData.accommodation} tripId={trip.id} isReadOnly={isReadOnly} />
+                      )}
 
-                  {/* Unassigned Bookings */}
-                  {dateData.unassigned.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                        Other Activities & Bookings
-                      </h4>
+                      {/* All Day Activities */}
                       <div className="space-y-3">
-                        {dateData.unassigned.map((booking: any) => (
-                          <DraggableBookingCard
-                            key={booking.id}
-                            booking={booking}
-                            tripId={trip.id}
-                            readOnly={isReadOnly}
-                          />
+                        <h4 className="text-sm font-semibold text-gray-700">Today&apos;s Activity</h4>
+                        {dateData.allDay.map((booking: any) => (
+                          <AllDayActivityCard key={booking.id} booking={booking} tripId={trip.id} isReadOnly={isReadOnly} />
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Regular Schedule View */}
+                  {viewMode === 'regular' && (
+                    <div className="space-y-6">
+                      {/* Accommodation */}
+                      {dateData.accommodation && (
+                        <div className="space-y-3">
+                          <h4 className="text-sm font-semibold text-gray-700">Where You&apos;re Staying</h4>
+                          <AccommodationCard booking={dateData.accommodation} tripId={trip.id} isReadOnly={isReadOnly} />
+                        </div>
+                      )}
+
+                      {/* Transport & Flights */}
+                      {dateData.transport.length > 0 && (
+                        <div className="space-y-3">
+                          <h4 className="text-sm font-semibold text-gray-700">Transport & Flights</h4>
+                          {dateData.transport.map((booking: any) => (
+                            <TransportCard key={booking.id} booking={booking} tripId={trip.id} isReadOnly={isReadOnly} />
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Morning */}
+                      {dateData.morning.length > 0 && (
+                        <TimeSection
+                          icon={Sun}
+                          title="Morning"
+                          bookings={dateData.morning}
+                          tripId={trip.id}
+                          isReadOnly={isReadOnly}
+                        />
+                      )}
+
+                      {/* Breakfast */}
+                      {dateData.breakfast && (
+                        <MealSection
+                          icon={Coffee}
+                          title="Breakfast"
+                          booking={dateData.breakfast}
+                          tripId={trip.id}
+                          isReadOnly={isReadOnly}
+                          slotType={DaySlotType.BREAKFAST}
+                          date={dateKey}
+                        />
+                      )}
+
+                      {/* Lunch */}
+                      {dateData.lunch && (
+                        <MealSection
+                          icon={UtensilsCrossed}
+                          title="Lunch"
+                          booking={dateData.lunch}
+                          tripId={trip.id}
+                          isReadOnly={isReadOnly}
+                          slotType={DaySlotType.LUNCH}
+                          date={dateKey}
+                        />
+                      )}
+
+                      {/* Afternoon */}
+                      {dateData.afternoon.length > 0 && (
+                        <TimeSection
+                          icon={Sunset}
+                          title="Afternoon"
+                          bookings={dateData.afternoon}
+                          tripId={trip.id}
+                          isReadOnly={isReadOnly}
+                        />
+                      )}
+
+                      {/* Dinner */}
+                      {dateData.dinner && (
+                        <MealSection
+                          icon={Moon}
+                          title="Dinner"
+                          booking={dateData.dinner}
+                          tripId={trip.id}
+                          isReadOnly={isReadOnly}
+                          slotType={DaySlotType.DINNER}
+                          date={dateKey}
+                        />
+                      )}
+
+                      {/* Evening */}
+                      {dateData.evening.length > 0 && (
+                        <TimeSection
+                          icon={Moon}
+                          title="Evening"
+                          bookings={dateData.evening}
+                          tripId={trip.id}
+                          isReadOnly={isReadOnly}
+                        />
+                      )}
                     </div>
                   )}
                 </div>
@@ -423,5 +443,251 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
         ) : null}
       </DragOverlay>
     </DndContext>
+  )
+}
+
+// Accommodation Card Component
+function AccommodationCard({ booking, tripId, isReadOnly }: any) {
+  const data = booking.typeSpecificData || {}
+  return (
+    <Card className="overflow-hidden">
+      <div className="h-32 bg-gradient-to-r from-blue-50 to-indigo-50" />
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-green-100 rounded-lg">
+            <HomeIcon className="h-5 w-5 text-green-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900">{data.propertyName || 'Accommodation'}</h3>
+            {data.address && (
+              <div className="flex items-center gap-1 mt-1 text-sm text-gray-600">
+                <MapPin className="h-3 w-3" />
+                <span className="truncate">{data.address}</span>
+              </div>
+            )}
+            <div className="flex gap-4 mt-2 text-xs text-gray-500">
+              {booking.time && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Check-in: {booking.time}
+                </div>
+              )}
+              {booking.endDate && (
+                <div>Check-out: {format(new Date(booking.endDate), 'yyyy-MM-dd')}</div>
+              )}
+            </div>
+            {booking.confirmationNumber && (
+              <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                <Hash className="h-3 w-3" />
+                Confirmation: {booking.confirmationNumber}
+              </div>
+            )}
+          </div>
+          {!isReadOnly && (
+            <div className="flex gap-1">
+              <Link href={`/bookings/${booking.id}/edit?tripId=${tripId}`}>
+                <Button variant="ghost" size="sm">
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Transport Card Component
+function TransportCard({ booking, tripId, isReadOnly }: any) {
+  const data = booking.typeSpecificData || {}
+  const isFlight = booking.type === 'FLIGHT'
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-gray-900">
+              {isFlight ? `Flight to ${data.arrivalAirport || 'Destination'}` : getBookingTypeLabel(booking.type)}
+            </h3>
+            {isFlight && data.flightNumber && (
+              <p className="text-sm text-gray-600">Flight {data.flightNumber}</p>
+            )}
+            <div className="flex items-center gap-6 mt-3">
+              {data.departureAirport && (
+                <div>
+                  <p className="text-xs text-gray-500">Departure</p>
+                  <p className="font-medium text-gray-900">{data.departureAirport}</p>
+                  {booking.time && <p className="text-sm text-gray-600">{booking.time}</p>}
+                </div>
+              )}
+              {data.arrivalAirport && (
+                <div>
+                  <p className="text-xs text-gray-500">Arrival</p>
+                  <p className="font-medium text-gray-900">{data.arrivalAirport}</p>
+                  {booking.endTime && <p className="text-sm text-gray-600">{booking.endTime}</p>}
+                </div>
+              )}
+            </div>
+            {booking.confirmationNumber && (
+              <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                <Hash className="h-3 w-3" />
+                Confirmation: {booking.confirmationNumber}
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// All Day Activity Card
+function AllDayActivityCard({ booking, tripId, isReadOnly }: any) {
+  const data = booking.typeSpecificData || {}
+  return (
+    <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-purple-100 rounded-lg">
+            <Calendar className="h-5 w-5 text-purple-600" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2 py-0.5 text-xs font-medium text-purple-700 bg-purple-100 rounded">
+                ALL DAY ACTIVITY
+              </span>
+            </div>
+            <h3 className="font-semibold text-gray-900">{data.name || getBookingTypeLabel(booking.type)}</h3>
+            {data.location && (
+              <div className="flex items-center gap-1 mt-1 text-sm text-gray-600">
+                <MapPin className="h-3 w-3" />
+                <span>Location: {data.location}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1 mt-2 text-sm text-gray-600">
+              <Clock className="h-3 w-3" />
+              <span>Time: {booking.time || '07:00'} - {booking.endTime || '19:00'}</span>
+            </div>
+            {booking.confirmationNumber && (
+              <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                <Hash className="h-3 w-3" />
+                Booking Reference: {booking.confirmationNumber}
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Time Section Component
+function TimeSection({ icon: Icon, title, bookings, tripId, isReadOnly }: any) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Icon className="h-5 w-5 text-gray-600" />
+        <h4 className="text-base font-semibold text-gray-900">{title}</h4>
+      </div>
+      <div className="space-y-2">
+        {bookings.map((booking: any) => (
+          <ActivityCard key={booking.id} booking={booking} tripId={tripId} isReadOnly={isReadOnly} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Meal Section Component
+function MealSection({ icon: Icon, title, booking, tripId, isReadOnly, slotType, date }: any) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Icon className="h-5 w-5 text-orange-600" />
+        <h4 className="text-base font-semibold text-gray-900">{title}</h4>
+      </div>
+      <MealCard booking={booking} tripId={tripId} isReadOnly={isReadOnly} />
+    </div>
+  )
+}
+
+// Activity Card Component
+function ActivityCard({ booking, tripId, isReadOnly }: any) {
+  const data = booking.typeSpecificData || {}
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-purple-100 rounded-lg">
+            <svg className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-semibold text-gray-900">{data.name || getBookingTypeLabel(booking.type)}</h3>
+              {booking.time && (
+                <div className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap">
+                  <Clock className="h-3 w-3" />
+                  {booking.time}
+                </div>
+              )}
+            </div>
+            {data.location && (
+              <div className="flex items-center gap-1 mt-1 text-sm text-gray-600">
+                <MapPin className="h-3 w-3" />
+                <span className="truncate">{data.location}</span>
+              </div>
+            )}
+            {data.description && (
+              <p className="text-sm text-gray-600 mt-1 line-clamp-2">{data.description}</p>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Meal Card Component
+function MealCard({ booking, tripId, isReadOnly }: any) {
+  const data = booking.typeSpecificData || {}
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-orange-100 rounded-lg">
+            <UtensilsCrossed className="h-5 w-5 text-orange-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-semibold text-gray-900">{data.name || 'Restaurant'}</h3>
+              {booking.time && (
+                <div className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap">
+                  <Clock className="h-3 w-3" />
+                  {booking.time}
+                </div>
+              )}
+            </div>
+            {data.address && (
+              <div className="flex items-center gap-1 mt-1 text-sm text-gray-600">
+                <MapPin className="h-3 w-3" />
+                <span className="truncate">{data.address}</span>
+              </div>
+            )}
+            {data.partySize && (
+              <p className="text-sm text-gray-600 mt-1">Party size: {data.partySize}</p>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

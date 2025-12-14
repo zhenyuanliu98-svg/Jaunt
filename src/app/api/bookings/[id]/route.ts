@@ -71,6 +71,8 @@ export async function PUT(
       notes,
       cost,
       city,
+      mealType,
+      isAllDay,
       typeSpecificData,
     } = body
 
@@ -84,6 +86,8 @@ export async function PUT(
     if (notes !== undefined) updates.notes = notes || null
     if (cost !== undefined) updates.cost = cost ? parseFloat(cost) : null
     if (city !== undefined) updates.city = city || null
+    if (mealType !== undefined) updates.mealType = mealType || null
+    if (isAllDay !== undefined) updates.isAllDay = isAllDay !== undefined ? isAllDay : null
     if (typeSpecificData !== undefined) updates.typeSpecificData = typeSpecificData || null
 
     const updatedBooking = await updateBooking(params.id, booking.tripId, updates)

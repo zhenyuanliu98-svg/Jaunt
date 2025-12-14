@@ -72,6 +72,7 @@ export interface BookingFormData {
   cost?: number
   city?: string
   mealType?: MealType
+  isAllDay?: boolean
   typeSpecificData: BookingTypeSpecificData
 }
 

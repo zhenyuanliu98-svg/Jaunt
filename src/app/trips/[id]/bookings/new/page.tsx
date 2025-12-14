@@ -23,6 +23,7 @@ export default function NewBookingPage() {
     cost: '',
     city: '',
     mealType: '' as MealType | '',
+    isAllDay: false,
     // Type-specific fields
     airline: '',
     flightNumber: '',
@@ -51,7 +52,7 @@ export default function NewBookingPage() {
         setFormData(prev => ({ ...prev, mealType: detectedMealType }))
       }
     }
-  }, [formData.time, formData.name, formData.type])
+  }, [formData.time, formData.name, formData.type, formData.mealType])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -117,6 +118,7 @@ export default function NewBookingPage() {
         cost: formData.cost ? parseFloat(formData.cost) : undefined,
         city: formData.city || undefined,
         mealType: formData.mealType || undefined,
+        isAllDay: formData.isAllDay || undefined,
         typeSpecificData,
       }
 
@@ -373,8 +375,25 @@ export default function NewBookingPage() {
                   type="time"
                   value={formData.time}
                   onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                  disabled={formData.isAllDay}
                 />
               </div>
+
+              {/* All Day Activity Checkbox */}
+              {(formData.type === 'ACTIVITY' || formData.type === 'RESTAURANT') && (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="isAllDay"
+                    checked={formData.isAllDay}
+                    onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked, time: e.target.checked ? '' : formData.time })}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isAllDay" className="text-sm font-medium text-gray-700">
+                    This is an all-day activity
+                  </label>
+                </div>
+              )}
 
               {/* End Date/Time (for accommodations and car rentals) */}
               {(formData.type === 'ACCOMMODATION' || formData.type === 'CAR_RENTAL') && (
