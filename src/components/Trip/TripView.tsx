@@ -15,6 +15,7 @@ import MealSlot from '@/components/Trip/MealSlot'
 import ActivitySlot, { TimeOfDay } from '@/components/Trip/ActivitySlot'
 import Map from '@/components/Map'
 import { getBookingTypeLabel } from '@/components/BookingTypeIcon'
+import { getBookingLocation } from '@/lib/bookingUtils'
 
 interface TripViewProps {
   trip: any
@@ -497,9 +498,17 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
 // Accommodation Card Component
 function AccommodationCard({ booking, tripId, isReadOnly }: any) {
   const data = booking.typeSpecificData || {}
+  const location = getBookingLocation(booking)
+
   return (
     <Card className="overflow-hidden">
-      <div className="h-32 bg-gradient-to-r from-blue-50 to-indigo-50" />
+      {location ? (
+        <div className="h-48">
+          <Map location={location} className="w-full h-full" />
+        </div>
+      ) : (
+        <div className="h-32 bg-gradient-to-r from-blue-50 to-indigo-50" />
+      )}
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-green-100 rounded-lg">
