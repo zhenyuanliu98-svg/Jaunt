@@ -503,7 +503,7 @@ function AccommodationCard({ booking, tripId, isReadOnly }: any) {
   return (
     <Card className="overflow-hidden">
       {location ? (
-        <div className="h-48">
+        <div className="h-48 md:h-56 touch-none" style={{ touchAction: 'pan-x pan-y' }}>
           <Map location={location} className="w-full h-full" />
         </div>
       ) : (
@@ -511,18 +511,18 @@ function AccommodationCard({ booking, tripId, isReadOnly }: any) {
       )}
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <div className="p-2 bg-green-100 rounded-lg">
+          <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
             <HomeIcon className="h-5 w-5 text-green-600" />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-gray-900">{data.propertyName || 'Accommodation'}</h3>
             {data.address && (
               <div className="flex items-center gap-1 mt-1 text-sm text-gray-600">
-                <MapPin className="h-3 w-3" />
+                <MapPin className="h-3 w-3 flex-shrink-0" />
                 <span className="truncate">{data.address}</span>
               </div>
             )}
-            <div className="flex gap-4 mt-2 text-xs text-gray-500">
+            <div className="flex flex-wrap gap-2 md:gap-4 mt-2 text-xs text-gray-500">
               {booking.time && (
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
@@ -541,7 +541,7 @@ function AccommodationCard({ booking, tripId, isReadOnly }: any) {
             )}
           </div>
           {!isReadOnly && (
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-shrink-0">
               <Link href={`/bookings/${booking.id}/edit?tripId=${tripId}`}>
                 <Button variant="ghost" size="sm">
                   <Pencil className="h-3 w-3" />

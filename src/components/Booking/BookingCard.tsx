@@ -113,19 +113,19 @@ export default function BookingCard({ booking, tripId, isReadOnly = false }: Boo
 
   return (
     <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
-          <div className="flex items-start space-x-4 flex-1 min-w-0">
-            <div className={cn('p-3 rounded-lg', typeColor)}>
-              <BookingTypeIcon type={booking.type} className="h-6 w-6" />
+      <CardContent className="p-4 md:p-6">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-start space-x-3 md:space-x-4">
+            <div className={cn('p-2 md:p-3 rounded-lg flex-shrink-0', typeColor)}>
+              <BookingTypeIcon type={booking.type} className="h-5 w-5 md:h-6 md:w-6" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2 gap-2">
                 <span className="text-sm font-medium text-gray-500">{typeLabel}</span>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 md:space-x-2 flex-shrink-0">
                   {booking.time && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Clock className="h-4 w-4 mr-1" />
+                    <div className="flex items-center text-xs md:text-sm text-gray-600">
+                      <Clock className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                       {booking.time}
                     </div>
                   )}
@@ -133,7 +133,7 @@ export default function BookingCard({ booking, tripId, isReadOnly = false }: Boo
                     <>
                       <Link href={`/bookings/${booking.id}/edit?tripId=${tripId}`}>
                         <Button variant="ghost" size="sm">
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-3 w-3 md:h-4 md:w-4" />
                         </Button>
                       </Link>
                       <Button
@@ -142,7 +142,7 @@ export default function BookingCard({ booking, tripId, isReadOnly = false }: Boo
                         onClick={handleDelete}
                         disabled={isDeleting}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
                       </Button>
                     </>
                   )}
@@ -161,7 +161,7 @@ export default function BookingCard({ booking, tripId, isReadOnly = false }: Boo
             </div>
           </div>
           {location && (
-            <div className="w-full md:w-80 h-48 md:h-64 md:flex-shrink-0">
+            <div className="w-full h-48 md:h-56 flex-shrink-0 touch-none" style={{ touchAction: 'pan-x pan-y' }}>
               <Map location={location} className="w-full h-full" />
             </div>
           )}
