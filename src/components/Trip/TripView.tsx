@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import Button from '@/components/ui/Button'
 import { Plus, Share2, Pencil, Trash2, Calendar, MapPin, Clock, Hash, Home as HomeIcon, Sun, Coffee, UtensilsCrossed, Moon, Sunset } from 'lucide-react'
 import Link from 'next/link'
-import { format } from 'date-fns'
+import { format, eachDayOfInterval } from 'date-fns'
 import { DndContext, DragEndEvent, DragOverlay } from '@dnd-kit/core'
 import { DaySlotType, MealType } from '@/types/enums'
 import BookingCard from '@/components/Booking/BookingCard'
@@ -15,7 +15,6 @@ import MealSlot from '@/components/Trip/MealSlot'
 import ActivitySlot, { TimeOfDay } from '@/components/Trip/ActivitySlot'
 import Map from '@/components/Map'
 import { getBookingTypeLabel } from '@/components/BookingTypeIcon'
-import { addDays, eachDayOfInterval } from 'date-fns'
 
 interface TripViewProps {
   trip: any
@@ -144,32 +143,61 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
     }
   }
 
-  // Generate all days in the trip range
-  const allDays = eachDayOfInterval({
-    start: new Date(trip.startDate),
-    end: new Date(trip.endDate),
-  })
-
-  // Initialize bookingsByDate with all trip days
-  const bookingsByDate: any = {}
-  allDays.forEach((day) => {
-    const dateKey = format(day, 'yyyy-MM-dd')
-    bookingsByDate[dateKey] = {
-      accommodation: null,
-      breakfast: null,
-      lunch: null,
-      dinner: null,
-      morning: [],
-      afternoon: [],
-      evening: [],
-      allDay: [],
-      transport: [],
-    }
-  })
-
   // Group bookings by date
+  const bookingsByDate: any = {}
+
   trip.bookings.forEach((booking: any) => {
     const dateKey = format(booking.date, 'yyyy-MM-dd')
+
+    // All-day activities
+    if (booking.isAllDay) {
+      if (!bookingsByDate[dateKey]) {
+        bookingsByDate[dateKey] = {
+          accommodation: null,
+          breakfast: null,
+          lunch: null,
+          dinner: null,
+          morning: [],
+          afternoon: [],
+          evening: [],
+          allDay: [],
+          transport: [],
+        }
+      }
+      bookingsByDate[dateKey].allDay.push(booking)
+      return
+    }
+
+    // Accommodation - span across all days from check-in to check-out
+    if (booking.type === 'ACCOMMODATION') {
+      const checkInDate = new Date(booking.date)
+      const checkOutDate = booking.endDate ? new Date(booking.endDate) : checkInDate
+
+      // Get all days from check-in to check-out
+      const accommodationDays = eachDayOfInterval({
+        start: checkInDate,
+        end: checkOutDate,
+      })
+
+      accommodationDays.forEach((day) => {
+        const dayKey = format(day, 'yyyy-MM-dd')
+        if (!bookingsByDate[dayKey]) {
+          bookingsByDate[dayKey] = {
+            accommodation: null,
+            breakfast: null,
+            lunch: null,
+            dinner: null,
+            morning: [],
+            afternoon: [],
+            evening: [],
+            allDay: [],
+            transport: [],
+          }
+        }
+        bookingsByDate[dayKey].accommodation = booking
+      })
+      return
+    }
 
     // Ensure the date exists in our map
     if (!bookingsByDate[dateKey]) {
@@ -184,32 +212,6 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
         allDay: [],
         transport: [],
       }
-    }
-
-    // All-day activities
-    if (booking.isAllDay) {
-      bookingsByDate[dateKey].allDay.push(booking)
-      return
-    }
-
-    // Accommodation - span across all days
-    if (booking.type === 'ACCOMMODATION') {
-      const checkInDate = new Date(booking.date)
-      const checkOutDate = booking.endDate ? new Date(booking.endDate) : checkInDate
-
-      // Show accommodation on all days from check-in to check-out (inclusive)
-      const accommodationDays = eachDayOfInterval({
-        start: checkInDate,
-        end: checkOutDate,
-      })
-
-      accommodationDays.forEach((day) => {
-        const dayKey = format(day, 'yyyy-MM-dd')
-        if (bookingsByDate[dayKey]) {
-          bookingsByDate[dayKey].accommodation = booking
-        }
-      })
-      return
     }
 
     // Transport & Flights

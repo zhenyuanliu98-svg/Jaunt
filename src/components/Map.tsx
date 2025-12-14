@@ -51,51 +51,49 @@ function loadGoogleMapsScript(apiKey: string): Promise<void> {
 
 export default function Map({ location, className = '' }: MapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isVisible, setIsVisible] = useState(false)
+  const [shouldLoad, setShouldLoad] = useState(false)
   const mapInstanceRef = useRef<any>(null)
   const markerInstanceRef = useRef<any>(null)
-  const observerRef = useRef<IntersectionObserver | null>(null)
+  const hasInitialized = useRef(false)
 
   // Intersection Observer to detect when map is visible
   useEffect(() => {
-    if (!mapRef.current) return
+    if (!containerRef.current) return
+    if (typeof window === 'undefined') return
+    if (typeof IntersectionObserver === 'undefined') {
+      // Fallback: load immediately if IntersectionObserver is not supported
+      setShouldLoad(true)
+      return
+    }
 
-    observerRef.current = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true)
-            // Once visible, disconnect the observer
-            if (observerRef.current) {
-              observerRef.current.disconnect()
-            }
-          }
-        })
+        if (entries[0].isIntersecting && !shouldLoad) {
+          setShouldLoad(true)
+        }
       },
       {
-        rootMargin: '100px', // Start loading 100px before the map is visible
-        threshold: 0.1,
+        rootMargin: '200px',
+        threshold: 0,
       }
     )
 
-    if (mapRef.current) {
-      observerRef.current.observe(mapRef.current)
-    }
+    observer.observe(containerRef.current)
 
     return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect()
-      }
+      observer.disconnect()
     }
-  }, [])
+  }, [shouldLoad])
 
-  // Only initialize map when it becomes visible
+  // Initialize map when it should load
   useEffect(() => {
-    if (!isVisible) return
+    if (!shouldLoad || hasInitialized.current) return
 
     let isMounted = true
+    hasInitialized.current = true
 
     const initMap = async () => {
       if (!mapRef.current) return
@@ -112,6 +110,11 @@ export default function Map({ location, className = '' }: MapProps) {
       try {
         // Load Google Maps script (will reuse if already loaded/loading)
         await loadGoogleMapsScript(apiKey)
+
+        if (!isMounted || !mapRef.current) return
+
+        // Add a small delay to help with consecutive loads
+        await new Promise(resolve => setTimeout(resolve, 100))
 
         if (!isMounted || !mapRef.current) return
 
@@ -178,7 +181,7 @@ export default function Map({ location, className = '' }: MapProps) {
       }
       mapInstanceRef.current = null
     }
-  }, [location, isVisible])
+  }, [location, shouldLoad])
 
   if (error) {
     return (
@@ -191,10 +194,15 @@ export default function Map({ location, className = '' }: MapProps) {
   }
 
   return (
-    <div className={`relative ${className}`}>
-      {isLoading && (
+    <div ref={containerRef} className={`relative ${className}`}>
+      {isLoading && shouldLoad && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg z-10">
           <div className="text-sm text-gray-500">Loading map...</div>
+        </div>
+      )}
+      {!shouldLoad && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+          <div className="text-sm text-gray-500">Map will load when visible...</div>
         </div>
       )}
       <div ref={mapRef} className="w-full h-full rounded-lg" />
