@@ -27,6 +27,7 @@ export default function EditBookingPage() {
     cost: '',
     city: '',
     mealType: '' as MealType | '',
+    isAllDay: false,
     // Type-specific fields
     airline: '',
     flightNumber: '',
@@ -81,6 +82,7 @@ export default function EditBookingPage() {
           cost: booking.cost?.toString() || '',
           city: booking.city || '',
           mealType: booking.mealType || '',
+          isAllDay: booking.isAllDay || false,
           // Type-specific fields
           airline: data.airline || '',
           flightNumber: data.flightNumber || '',
@@ -174,6 +176,7 @@ export default function EditBookingPage() {
         cost: formData.cost ? parseFloat(formData.cost) : undefined,
         city: formData.city || undefined,
         mealType: formData.mealType || undefined,
+        isAllDay: formData.isAllDay || undefined,
         typeSpecificData,
       }
 
