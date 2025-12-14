@@ -137,6 +137,7 @@ export default function Map({ location, className = '' }: MapProps) {
               mapTypeControl: false,
               streetViewControl: false,
               fullscreenControl: false,
+              gestureHandling: 'greedy', // Enable single-finger panning on mobile
             })
 
             // Add marker
