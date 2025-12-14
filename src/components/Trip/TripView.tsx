@@ -326,7 +326,7 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
 
                       {/* All Day Activities */}
                       <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-gray-700">Today's Activity</h4>
+                        <h4 className="text-sm font-semibold text-gray-700">Today&apos;s Activity</h4>
                         {dateData.allDay.map((booking: any) => (
                           <AllDayActivityCard key={booking.id} booking={booking} tripId={trip.id} isReadOnly={isReadOnly} />
                         ))}
@@ -340,7 +340,7 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
                       {/* Accommodation */}
                       {dateData.accommodation && (
                         <div className="space-y-3">
-                          <h4 className="text-sm font-semibold text-gray-700">Where You're Staying</h4>
+                          <h4 className="text-sm font-semibold text-gray-700">Where You&apos;re Staying</h4>
                           <AccommodationCard booking={dateData.accommodation} tripId={trip.id} isReadOnly={isReadOnly} />
                         </div>
                       )}

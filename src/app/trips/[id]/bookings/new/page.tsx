@@ -52,7 +52,7 @@ export default function NewBookingPage() {
         setFormData(prev => ({ ...prev, mealType: detectedMealType }))
       }
     }
-  }, [formData.time, formData.name, formData.type])
+  }, [formData.time, formData.name, formData.type, formData.mealType])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

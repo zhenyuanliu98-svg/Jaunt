@@ -57,7 +57,7 @@ export default function EditBookingPage() {
         setFormData(prev => ({ ...prev, mealType: detectedMealType }))
       }
     }
-  }, [formData.time, formData.name, formData.type, loading])
+  }, [formData.time, formData.name, formData.type, formData.mealType, loading])
 
   useEffect(() => {
     const fetchBooking = async () => {
