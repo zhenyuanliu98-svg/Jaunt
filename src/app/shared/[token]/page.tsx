@@ -86,9 +86,9 @@ export default async function SharedTripPage(props: { params: Promise<{ token: s
           ) : (
             <div className="space-y-8">
               {sortedDates.map((dateKey) => (
-                <div key={dateKey}>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {format(new Date(dateKey), 'EEEE, MMMM dd, yyyy')}
+                <div key={dateKey} className="space-y-4">
+                  <h3 className="sticky top-0 z-10 bg-gray-50 py-3 text-xl font-bold text-gray-900 border-b border-gray-200">
+                    {format(new Date(dateKey), 'd MMM yyyy')}
                   </h3>
                   <div className="space-y-4">
                     {bookingsByDate[dateKey].map((booking: any) => (

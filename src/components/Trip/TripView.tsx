@@ -348,15 +348,10 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
               return (
                 <div key={dateKey} className="space-y-4">
                   {/* Date Header with Toggle */}
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900">
-                        Day {dayIndex + 1}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {format(new Date(dateKey), 'EEEE, MMMM dd')}
-                      </p>
-                    </div>
+                  <div className="sticky top-0 z-10 bg-white py-3 border-b border-gray-200 -mx-6 px-6 flex justify-between items-center">
+                    <h3 className="text-xl font-bold text-gray-900">
+                      {format(new Date(dateKey), 'd MMM yyyy')}
+                    </h3>
                     {hasAllDayActivities && (
                       <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
                         <button
