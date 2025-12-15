@@ -29,11 +29,33 @@ export default async function DashboardPage() {
   return (
     <DashboardLayout>
       {isDemoMode && (
-        <Card className="bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-200 mb-6">
-          <CardContent className="py-4">
-            <p className="text-sm text-indigo-800">
-              You&apos;re exploring Jaunt in demo mode. Sign in to save your own trips and bookings.
-            </p>
+        <Card className="bg-gradient-to-r from-indigo-500 to-blue-500 border-indigo-600 mb-6 shadow-lg">
+          <CardContent className="py-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/90 text-indigo-700">
+                    Demo Mode
+                  </span>
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-1">
+                  You&apos;re exploring Jaunt
+                </h3>
+                <p className="text-sm text-indigo-50">
+                  Create a free account to save your trips, organize bookings, and access all features.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Link href="/" className="w-full sm:w-auto">
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto bg-white text-indigo-600 hover:bg-indigo-50 shadow-md hover:shadow-lg transition-all font-semibold"
+                  >
+                    Sign Up Free
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

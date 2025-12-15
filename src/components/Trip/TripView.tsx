@@ -319,39 +319,41 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
           {/* Trip Header */}
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-start">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                 <div className="flex-1">
-                  <CardTitle className="text-3xl">{trip.name}</CardTitle>
-                  <CardDescription className="text-lg mt-2">
+                  <CardTitle className="text-2xl sm:text-3xl">{trip.name}</CardTitle>
+                  <CardDescription className="text-base sm:text-lg mt-2">
                     {trip.destination}
                   </CardDescription>
-                  <div className="flex items-center mt-4 text-gray-600">
-                    <Calendar className="h-5 w-5 mr-2" />
+                  <div className="flex items-center mt-3 sm:mt-4 text-sm sm:text-base text-gray-600">
+                    <Calendar className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                     <span>
                       {format(trip.startDate, 'MMM dd, yyyy')} - {format(trip.endDate, 'MMM dd, yyyy')}
                     </span>
                   </div>
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex flex-row sm:flex-row gap-2 sm:space-x-2">
                   <Button
                     variant="ghost"
                     onClick={handleShare}
                     disabled={isReadOnly}
                     title={isReadOnly ? 'Sign in to share trips' : undefined}
+                    size="sm"
+                    className="flex-1 sm:flex-initial"
                   >
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Share
+                    <Share2 className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Share</span>
                   </Button>
                   {isReadOnly ? (
-                    <Button variant="ghost" disabled title="Sign in to edit trips">
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
+                    <Button variant="ghost" disabled title="Sign in to edit trips" size="sm" className="flex-1 sm:flex-initial">
+                      <Pencil className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Edit</span>
                     </Button>
                   ) : (
                     <Link href={`/trips/${trip.id}/edit`}>
-                      <Button variant="ghost">
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit
+                      <Button variant="ghost" size="sm" className="flex-1 sm:flex-initial">
+                        <Pencil className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Edit</span>
                       </Button>
                     </Link>
                   )}
@@ -360,9 +362,12 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
                     onClick={handleDelete}
                     disabled={isDeleting || isReadOnly}
                     title={isReadOnly ? 'Sign in to delete trips' : undefined}
+                    size="sm"
+                    className="flex-1 sm:flex-initial"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {isDeleting ? 'Deleting...' : 'Delete'}
+                    <Trash2 className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">{isDeleting ? 'Deleting...' : 'Delete'}</span>
+                    <span className="sm:hidden">{isDeleting ? '...' : ''}</span>
                   </Button>
                 </div>
               </div>
