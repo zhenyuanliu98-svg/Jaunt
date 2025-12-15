@@ -1,8 +1,10 @@
 'use client'
 
 import { useDroppable } from '@dnd-kit/core'
-import { Sun, Sunset, Moon } from 'lucide-react'
+import { Sun, Sunset, Moon, Plus } from 'lucide-react'
 import DraggableBookingCard from '@/components/Booking/DraggableBookingCard'
+import Button from '@/components/ui/Button'
+import Link from 'next/link'
 
 export enum TimeOfDay {
   MORNING = 'MORNING',
@@ -70,13 +72,23 @@ export default function ActivitySlot({
         isOver ? 'ring-2 ring-blue-400 scale-[1.02]' : ''
       }`}
     >
-      <div className="flex items-center gap-2 mb-3">
-        <div className={`${config.iconColor}`}>
-          <Icon className="h-4 w-4" />
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2">
+          <div className={`${config.iconColor}`}>
+            <Icon className="h-4 w-4" />
+          </div>
+          <h3 className={`text-sm font-semibold ${config.textColor}`}>
+            {config.label}
+          </h3>
         </div>
-        <h3 className={`text-sm font-semibold ${config.textColor}`}>
-          {config.label}
-        </h3>
+        {!readOnly && tripId && (
+          <Link href={`/trips/${tripId}/bookings/new`}>
+            <Button variant="ghost" size="sm">
+              <Plus className="h-3 w-3 mr-1" />
+              Add
+            </Button>
+          </Link>
+        )}
       </div>
 
       {bookings && bookings.length > 0 ? (

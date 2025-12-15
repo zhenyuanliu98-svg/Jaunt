@@ -2,8 +2,10 @@
 
 import { useDroppable } from '@dnd-kit/core'
 import { DaySlotType } from '@/types/enums'
-import { Coffee, UtensilsCrossed, Moon, Home } from 'lucide-react'
+import { Coffee, UtensilsCrossed, Moon, Home, Plus, Pencil } from 'lucide-react'
 import DraggableBookingCard from '@/components/Booking/DraggableBookingCard'
+import Button from '@/components/ui/Button'
+import Link from 'next/link'
 
 interface MealSlotProps {
   slotType: DaySlotType
@@ -73,13 +75,23 @@ export default function MealSlot({
         isOver ? 'ring-2 ring-blue-400 scale-[1.02]' : ''
       }`}
     >
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`${config.iconColor}`}>
-          <Icon className="h-4 w-4" />
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <div className={`${config.iconColor}`}>
+            <Icon className="h-4 w-4" />
+          </div>
+          <h3 className={`text-sm font-semibold ${config.textColor}`}>
+            {config.label}
+          </h3>
         </div>
-        <h3 className={`text-sm font-semibold ${config.textColor}`}>
-          {config.label}
-        </h3>
+        {!readOnly && tripId && booking && (
+          <Link href={`/bookings/${booking.id}/edit?tripId=${tripId}`}>
+            <Button variant="ghost" size="sm">
+              <Pencil className="h-3 w-3 mr-1" />
+              Edit
+            </Button>
+          </Link>
+        )}
       </div>
 
       {booking ? (

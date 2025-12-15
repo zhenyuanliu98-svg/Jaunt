@@ -422,59 +422,71 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
                         </div>
                       )}
 
-                      {/* Morning */}
-                      <ActivitySlot
-                        timeOfDay={TimeOfDay.MORNING}
-                        date={dateKey}
-                        bookings={dateData.morning}
-                        tripId={trip.id}
-                        readOnly={isReadOnly}
-                      />
+                      {/* Morning - Only show if has activities */}
+                      {dateData.morning.length > 0 && (
+                        <ActivitySlot
+                          timeOfDay={TimeOfDay.MORNING}
+                          date={dateKey}
+                          bookings={dateData.morning}
+                          tripId={trip.id}
+                          readOnly={isReadOnly}
+                        />
+                      )}
 
-                      {/* Breakfast */}
-                      <MealSlot
-                        slotType={DaySlotType.BREAKFAST}
-                        date={dateKey}
-                        booking={dateData.breakfast}
-                        tripId={trip.id}
-                        readOnly={isReadOnly}
-                      />
+                      {/* Breakfast - Only show if has booking */}
+                      {dateData.breakfast && (
+                        <MealSlot
+                          slotType={DaySlotType.BREAKFAST}
+                          date={dateKey}
+                          booking={dateData.breakfast}
+                          tripId={trip.id}
+                          readOnly={isReadOnly}
+                        />
+                      )}
 
-                      {/* Lunch */}
-                      <MealSlot
-                        slotType={DaySlotType.LUNCH}
-                        date={dateKey}
-                        booking={dateData.lunch}
-                        tripId={trip.id}
-                        readOnly={isReadOnly}
-                      />
+                      {/* Lunch - Only show if has booking */}
+                      {dateData.lunch && (
+                        <MealSlot
+                          slotType={DaySlotType.LUNCH}
+                          date={dateKey}
+                          booking={dateData.lunch}
+                          tripId={trip.id}
+                          readOnly={isReadOnly}
+                        />
+                      )}
 
-                      {/* Afternoon */}
-                      <ActivitySlot
-                        timeOfDay={TimeOfDay.AFTERNOON}
-                        date={dateKey}
-                        bookings={dateData.afternoon}
-                        tripId={trip.id}
-                        readOnly={isReadOnly}
-                      />
+                      {/* Afternoon - Only show if has activities */}
+                      {dateData.afternoon.length > 0 && (
+                        <ActivitySlot
+                          timeOfDay={TimeOfDay.AFTERNOON}
+                          date={dateKey}
+                          bookings={dateData.afternoon}
+                          tripId={trip.id}
+                          readOnly={isReadOnly}
+                        />
+                      )}
 
-                      {/* Dinner */}
-                      <MealSlot
-                        slotType={DaySlotType.DINNER}
-                        date={dateKey}
-                        booking={dateData.dinner}
-                        tripId={trip.id}
-                        readOnly={isReadOnly}
-                      />
+                      {/* Dinner - Only show if has booking */}
+                      {dateData.dinner && (
+                        <MealSlot
+                          slotType={DaySlotType.DINNER}
+                          date={dateKey}
+                          booking={dateData.dinner}
+                          tripId={trip.id}
+                          readOnly={isReadOnly}
+                        />
+                      )}
 
-                      {/* Evening */}
-                      <ActivitySlot
-                        timeOfDay={TimeOfDay.EVENING}
-                        date={dateKey}
-                        bookings={dateData.evening}
-                        tripId={trip.id}
-                        readOnly={isReadOnly}
-                      />
+                      {/* Evening - Only show if has activities */}
+                      {dateData.evening.length > 0 && (
+                        <ActivitySlot
+                          timeOfDay={TimeOfDay.EVENING}
+                          date={dateKey}
+                          bookings={dateData.evening}
+                          tripId={trip.id}
+                          readOnly={isReadOnly}
+                        />
+                      )}
                     </div>
                   )}
                 </div>
