@@ -50,8 +50,7 @@ export default function ItinerarySidebar({ trip, bookingsByDate, onDateClick }: 
   }
 
   return (
-    <div className="w-80 flex-shrink-0">
-      <div className="sticky top-4 space-y-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+    <div className="space-y-4 max-h-[calc(100vh-2rem)] overflow-y-auto pr-2">
         {/* Trip Overview Card */}
         <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-100">
           <CardContent className="p-6 space-y-4">
@@ -232,7 +231,6 @@ export default function ItinerarySidebar({ trip, bookingsByDate, onDateClick }: 
             </div>
           </CardContent>
         </Card>
-      </div>
     </div>
   )
 }

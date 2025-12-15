@@ -307,9 +307,11 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
       )}
 
       <div className="flex gap-6">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
-          <ItinerarySidebar trip={trip} bookingsByDate={bookingsByDate} />
+        {/* Desktop Sidebar - Sticky */}
+        <div className="hidden lg:block w-80 flex-shrink-0">
+          <div className="sticky top-4">
+            <ItinerarySidebar trip={trip} bookingsByDate={bookingsByDate} />
+          </div>
         </div>
 
         {/* Main Content */}
