@@ -402,36 +402,50 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
 
                 return (
                   <div key={dateKey} id={`date-${dateKey}`} className="space-y-4 scroll-mt-4">
-                  {/* Date Header with Toggle */}
-                  <div className="sticky top-0 z-10 bg-white py-3 border-b border-gray-200 -mx-6 px-6 flex justify-between items-center">
-                    <h3 className="text-xl font-bold text-gray-900">
-                      {format(new Date(dateKey), 'd MMM yyyy')}
-                    </h3>
-                    {hasAllDayActivities && (
-                      <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
-                        <button
-                          onClick={() => setViewMode('regular')}
-                          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                            viewMode === 'regular'
-                              ? 'bg-white text-gray-900 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          Regular Schedule
-                        </button>
-                        <button
-                          onClick={() => setViewMode('allDay')}
-                          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                            viewMode === 'allDay'
-                              ? 'bg-white text-gray-900 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          All Day Activity
-                        </button>
+                  {/* Date Header Card */}
+                  <Card className="sticky top-4 z-10 bg-gradient-to-r from-gray-50 to-white border-l-4 border-l-indigo-500">
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-indigo-100 rounded-lg">
+                            <Calendar className="h-5 w-5 text-indigo-600" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">
+                              Day {dayIndex + 1}
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">
+                              {format(new Date(dateKey), 'EEEE, MMM d, yyyy')}
+                            </h3>
+                          </div>
+                        </div>
+                        {hasAllDayActivities && (
+                          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                            <button
+                              onClick={() => setViewMode('regular')}
+                              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                                viewMode === 'regular'
+                                  ? 'bg-white text-indigo-600 shadow-sm'
+                                  : 'text-gray-600 hover:text-gray-900'
+                              }`}
+                            >
+                              Schedule
+                            </button>
+                            <button
+                              onClick={() => setViewMode('allDay')}
+                              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                                viewMode === 'allDay'
+                                  ? 'bg-white text-indigo-600 shadow-sm'
+                                  : 'text-gray-600 hover:text-gray-900'
+                              }`}
+                            >
+                              All Day
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </CardContent>
+                  </Card>
 
                   {/* All Day Activity View */}
                   {viewMode === 'allDay' && hasAllDayActivities && (

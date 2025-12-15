@@ -1,8 +1,9 @@
 'use client'
 
 import { format, eachDayOfInterval, differenceInDays } from 'date-fns'
-import { Calendar, MapPin, Plane, Home, UtensilsCrossed, Sparkles, ChevronRight } from 'lucide-react'
+import { Calendar, MapPin, Plane, Home, UtensilsCrossed, Sparkles, ChevronRight, Coffee, Moon, Sun, Sunset } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
+import { getBookingTypeLabel } from '@/components/BookingTypeIcon'
 
 interface ItinerarySidebarProps {
   trip: any
@@ -39,25 +40,18 @@ export default function ItinerarySidebar({ trip, bookingsByDate, onDateClick }: 
     }
   }
 
-  const getActivityCount = (dateKey: string) => {
-    const dateData = bookingsByDate[dateKey]
-    if (!dateData) return 0
-
-    return (
-      dateData.morning.length +
-      dateData.afternoon.length +
-      dateData.evening.length +
-      dateData.allDay.length +
-      dateData.transport.length +
-      (dateData.breakfast ? 1 : 0) +
-      (dateData.lunch ? 1 : 0) +
-      (dateData.dinner ? 1 : 0)
-    )
+  const getBookingName = (booking: any) => {
+    const data = booking.typeSpecificData || {}
+    if (booking.type === 'ACCOMMODATION') return data.propertyName || 'Accommodation'
+    if (booking.type === 'ACTIVITY') return data.name || 'Activity'
+    if (booking.type === 'RESTAURANT') return data.name || 'Restaurant'
+    if (booking.type === 'FLIGHT') return `${data.departureAirport} → ${data.arrivalAirport}`
+    return getBookingTypeLabel(booking.type)
   }
 
   return (
     <div className="w-80 flex-shrink-0">
-      <div className="sticky top-4 space-y-4">
+      <div className="sticky top-4 space-y-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
         {/* Trip Overview Card */}
         <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-100">
           <CardContent className="p-6 space-y-4">
@@ -141,48 +135,98 @@ export default function ItinerarySidebar({ trip, bookingsByDate, onDateClick }: 
         <Card>
           <CardContent className="p-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Daily Timeline</h3>
-            <div className="space-y-1 max-h-[calc(100vh-28rem)] overflow-y-auto pr-2">
+            <div className="space-y-3">
               {allDates.map((date, index) => {
                 const dateKey = format(date, 'yyyy-MM-dd')
-                const activityCount = getActivityCount(dateKey)
+                const dateData = bookingsByDate[dateKey]
                 const isToday = format(new Date(), 'yyyy-MM-dd') === dateKey
 
+                // Collect all bookings for this day
+                const dayBookings = []
+                if (dateData) {
+                  if (dateData.accommodation) dayBookings.push({ ...dateData.accommodation, category: 'accommodation' })
+                  dateData.transport.forEach((b: any) => dayBookings.push({ ...b, category: 'transport' }))
+                  dateData.morning.forEach((b: any) => dayBookings.push({ ...b, category: 'morning' }))
+                  if (dateData.breakfast) dayBookings.push({ ...dateData.breakfast, category: 'breakfast' })
+                  if (dateData.lunch) dayBookings.push({ ...dateData.lunch, category: 'lunch' })
+                  dateData.afternoon.forEach((b: any) => dayBookings.push({ ...b, category: 'afternoon' }))
+                  if (dateData.dinner) dayBookings.push({ ...dateData.dinner, category: 'dinner' })
+                  dateData.evening.forEach((b: any) => dayBookings.push({ ...b, category: 'evening' }))
+                  dateData.allDay.forEach((b: any) => dayBookings.push({ ...b, category: 'allDay' }))
+                }
+
                 return (
-                  <button
+                  <div
                     key={dateKey}
-                    onClick={() => handleDateClick(dateKey)}
-                    className={`w-full text-left p-3 rounded-lg transition-all hover:bg-indigo-50 group ${
-                      isToday ? 'bg-indigo-50 border border-indigo-200' : 'hover:border hover:border-indigo-100'
+                    className={`rounded-lg border transition-all ${
+                      isToday ? 'border-indigo-200 bg-indigo-50' : 'border-gray-200 bg-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-xs font-semibold ${
-                            isToday ? 'text-indigo-600' : 'text-gray-500'
-                          }`}>
-                            DAY {index + 1}
-                          </span>
-                          {isToday && (
-                            <span className="px-1.5 py-0.5 text-[10px] font-bold text-indigo-600 bg-indigo-100 rounded">
-                              TODAY
+                    <button
+                      onClick={() => handleDateClick(dateKey)}
+                      className="w-full text-left p-3 hover:bg-gray-50 rounded-t-lg transition-colors group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-xs font-semibold ${
+                              isToday ? 'text-indigo-600' : 'text-gray-500'
+                            }`}>
+                              DAY {index + 1}
                             </span>
-                          )}
+                            {isToday && (
+                              <span className="px-1.5 py-0.5 text-[10px] font-bold text-indigo-600 bg-indigo-100 rounded">
+                                TODAY
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {format(date, 'MMM d, EEE')}
+                          </div>
                         </div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {format(date, 'MMM d, EEE')}
-                        </div>
-                        {activityCount > 0 && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {activityCount} {activityCount === 1 ? 'item' : 'items'}
+                        <ChevronRight className={`h-4 w-4 transition-colors flex-shrink-0 ${
+                          isToday ? 'text-indigo-400' : 'text-gray-300 group-hover:text-indigo-400'
+                        }`} />
+                      </div>
+                    </button>
+
+                    {/* Activity List */}
+                    {dayBookings.length > 0 && (
+                      <div className="px-3 pb-3 space-y-1.5">
+                        {dayBookings.slice(0, 4).map((booking: any, idx: number) => (
+                          <div
+                            key={booking.id || idx}
+                            className="text-xs text-gray-600 flex items-start gap-1.5 py-1"
+                          >
+                            {booking.category === 'accommodation' && <Home className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />}
+                            {booking.category === 'transport' && <Plane className="h-3 w-3 text-blue-600 mt-0.5 flex-shrink-0" />}
+                            {booking.category === 'morning' && <Sun className="h-3 w-3 text-yellow-600 mt-0.5 flex-shrink-0" />}
+                            {booking.category === 'afternoon' && <Sunset className="h-3 w-3 text-orange-600 mt-0.5 flex-shrink-0" />}
+                            {booking.category === 'evening' && <Moon className="h-3 w-3 text-indigo-600 mt-0.5 flex-shrink-0" />}
+                            {booking.category === 'breakfast' && <Coffee className="h-3 w-3 text-amber-600 mt-0.5 flex-shrink-0" />}
+                            {booking.category === 'lunch' && <UtensilsCrossed className="h-3 w-3 text-orange-600 mt-0.5 flex-shrink-0" />}
+                            {booking.category === 'dinner' && <Moon className="h-3 w-3 text-indigo-600 mt-0.5 flex-shrink-0" />}
+                            {booking.category === 'allDay' && <Sparkles className="h-3 w-3 text-purple-600 mt-0.5 flex-shrink-0" />}
+                            <span className="truncate flex-1">
+                              {booking.time && <span className="text-gray-400 mr-1">{booking.time}</span>}
+                              {getBookingName(booking)}
+                            </span>
+                          </div>
+                        ))}
+                        {dayBookings.length > 4 && (
+                          <div className="text-xs text-gray-400 pl-4 pt-1">
+                            +{dayBookings.length - 4} more
                           </div>
                         )}
                       </div>
-                      <ChevronRight className={`h-4 w-4 transition-colors ${
-                        isToday ? 'text-indigo-400' : 'text-gray-300 group-hover:text-indigo-400'
-                      }`} />
-                    </div>
-                  </button>
+                    )}
+
+                    {dayBookings.length === 0 && (
+                      <div className="px-3 pb-3 text-xs text-gray-400 italic">
+                        No activities planned
+                      </div>
+                    )}
+                  </div>
                 )
               })}
             </div>
