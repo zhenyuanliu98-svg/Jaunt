@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
-import { Plus, Share2, Pencil, Trash2, Calendar, MapPin, Clock, Hash, Home as HomeIcon, Sun, Coffee, UtensilsCrossed, Moon, Sunset } from 'lucide-react'
+import { Plus, Share2, Pencil, Trash2, Calendar, MapPin, Clock, Hash, Home as HomeIcon, Sun, Coffee, UtensilsCrossed, Moon, Sunset, Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { format, eachDayOfInterval } from 'date-fns'
 import { DndContext, DragEndEvent, DragOverlay } from '@dnd-kit/core'
@@ -16,6 +16,7 @@ import ActivitySlot, { TimeOfDay } from '@/components/Trip/ActivitySlot'
 import Map from '@/components/Map'
 import { getBookingTypeLabel } from '@/components/BookingTypeIcon'
 import { getBookingLocation } from '@/lib/bookingUtils'
+import ItinerarySidebar from '@/components/Trip/ItinerarySidebar'
 
 interface TripViewProps {
   trip: any
@@ -29,6 +30,7 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('regular')
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const handleDelete = async () => {
     if (isReadOnly) return
@@ -258,95 +260,148 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
       onDragStart={(event) => setActiveId(event.active.id as string)}
       onDragEnd={handleDragEnd}
     >
-      <div className="space-y-6">
-        {/* Trip Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <CardTitle className="text-3xl">{trip.name}</CardTitle>
-                <CardDescription className="text-lg mt-2">
-                  {trip.destination}
-                </CardDescription>
-                <div className="flex items-center mt-4 text-gray-600">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  <span>
-                    {format(trip.startDate, 'MMM dd, yyyy')} - {format(trip.endDate, 'MMM dd, yyyy')}
-                  </span>
+      {/* Mobile Sidebar Toggle */}
+      <div className="lg:hidden mb-4">
+        <Button
+          variant="ghost"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="w-full justify-start"
+        >
+          {sidebarOpen ? (
+            <>
+              <X className="h-5 w-5 mr-2" />
+              Hide Summary
+            </>
+          ) : (
+            <>
+              <Menu className="h-5 w-5 mr-2" />
+              Show Trip Summary
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-black/50" onClick={() => setSidebarOpen(false)}>
+          <div className="fixed left-0 top-0 bottom-0 w-80 bg-gray-50 p-4 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold">Trip Summary</h2>
+              <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <ItinerarySidebar trip={trip} bookingsByDate={bookingsByDate} onDateClick={(dateKey) => {
+              setSidebarOpen(false)
+              setTimeout(() => {
+                const element = document.getElementById(`date-${dateKey}`)
+                if (element) {
+                  const yOffset = -20
+                  const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset
+                  window.scrollTo({ top: y, behavior: 'smooth' })
+                }
+              }, 100)
+            }} />
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-6">
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block">
+          <ItinerarySidebar trip={trip} bookingsByDate={bookingsByDate} />
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 min-w-0 space-y-6">
+          {/* Trip Header */}
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <CardTitle className="text-3xl">{trip.name}</CardTitle>
+                  <CardDescription className="text-lg mt-2">
+                    {trip.destination}
+                  </CardDescription>
+                  <div className="flex items-center mt-4 text-gray-600">
+                    <Calendar className="h-5 w-5 mr-2" />
+                    <span>
+                      {format(trip.startDate, 'MMM dd, yyyy')} - {format(trip.endDate, 'MMM dd, yyyy')}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div className="flex space-x-2">
-                <Button
-                  variant="ghost"
-                  onClick={handleShare}
-                  disabled={isReadOnly}
-                  title={isReadOnly ? 'Sign in to share trips' : undefined}
-                >
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
-                {isReadOnly ? (
-                  <Button variant="ghost" disabled title="Sign in to edit trips">
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
+                <div className="flex space-x-2">
+                  <Button
+                    variant="ghost"
+                    onClick={handleShare}
+                    disabled={isReadOnly}
+                    title={isReadOnly ? 'Sign in to share trips' : undefined}
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share
                   </Button>
-                ) : (
-                  <Link href={`/trips/${trip.id}/edit`}>
-                    <Button variant="ghost">
+                  {isReadOnly ? (
+                    <Button variant="ghost" disabled title="Sign in to edit trips">
                       <Pencil className="h-4 w-4 mr-2" />
                       Edit
                     </Button>
-                  </Link>
-                )}
-                <Button
-                  variant="danger"
-                  onClick={handleDelete}
-                  disabled={isDeleting || isReadOnly}
-                  title={isReadOnly ? 'Sign in to delete trips' : undefined}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </Button>
+                  ) : (
+                    <Link href={`/trips/${trip.id}/edit`}>
+                      <Button variant="ghost">
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    </Link>
+                  )}
+                  <Button
+                    variant="danger"
+                    onClick={handleDelete}
+                    disabled={isDeleting || isReadOnly}
+                    title={isReadOnly ? 'Sign in to delete trips' : undefined}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </div>
               </div>
-            </div>
-          </CardHeader>
-        </Card>
+            </CardHeader>
+          </Card>
 
-        {/* Add Booking Button */}
-        <div className="flex justify-end">
-          {isReadOnly ? (
-            <Button disabled title="Sign in to add bookings">
-              <Plus className="h-5 w-5 mr-2" />
-              Add Booking
-            </Button>
-          ) : (
-            <Link href={`/trips/${trip.id}/bookings/new`}>
-              <Button>
+          {/* Add Booking Button */}
+          <div className="flex justify-end">
+            {isReadOnly ? (
+              <Button disabled title="Sign in to add bookings">
                 <Plus className="h-5 w-5 mr-2" />
                 Add Booking
               </Button>
-            </Link>
-          )}
-        </div>
-
-        {/* Timeline View */}
-        {trip.bookings.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-gray-500 mb-4">No bookings yet</p>
+            ) : (
               <Link href={`/trips/${trip.id}/bookings/new`}>
-                <Button>Add Your First Booking</Button>
+                <Button>
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add Booking
+                </Button>
               </Link>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-8">
-            {sortedDates.map((dateKey, dayIndex) => {
-              const dateData = bookingsByDate[dateKey]
-              const hasAllDayActivities = dateData.allDay.length > 0
+            )}
+          </div>
 
-              return (
-                <div key={dateKey} className="space-y-4">
+          {/* Timeline View */}
+          {trip.bookings.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-gray-500 mb-4">No bookings yet</p>
+                <Link href={`/trips/${trip.id}/bookings/new`}>
+                  <Button>Add Your First Booking</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-8">
+              {sortedDates.map((dateKey, dayIndex) => {
+                const dateData = bookingsByDate[dateKey]
+                const hasAllDayActivities = dateData.allDay.length > 0
+
+                return (
+                  <div key={dateKey} id={`date-${dateKey}`} className="space-y-4 scroll-mt-4">
                   {/* Date Header with Toggle */}
                   <div className="sticky top-0 z-10 bg-white py-3 border-b border-gray-200 -mx-6 px-6 flex justify-between items-center">
                     <h3 className="text-xl font-bold text-gray-900">
@@ -486,9 +541,10 @@ export default function TripView({ trip, isReadOnly = false }: TripViewProps) {
                   )}
                 </div>
               )
-            })}
-          </div>
-        )}
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       <DragOverlay>
